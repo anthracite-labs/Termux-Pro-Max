@@ -144,7 +144,9 @@ jobs:
           emulator-port: 5580
           emulator-boot-timeout: 300
           disable-linux-hw-accel: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -accel off
+          emulator-options: >-
+            -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -accel off
+            > ${{ github.workspace }}/termux-pro-app/build/evidence/android-arm64/emulator.log 2>&1
           working-directory: termux-pro-app
           script: bash ci/run-android-proof.sh build/apk/proof-debug.apk
       - name: Record emulator diagnostics
