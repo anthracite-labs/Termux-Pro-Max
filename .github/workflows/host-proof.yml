@@ -60,9 +60,11 @@ jobs:
           distribution: temurin
           java-version: '21.0.9+10.0.LTS'
       - name: Install the fixed Android build tools
-        run: |
-          sdkmanager --licenses < <(yes) > /dev/null
-          sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358'
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          cmdline-tools-version: '13114758'
+          log-accepted-android-sdk-licenses: false
+          packages: platform-tools platforms;android-36 build-tools;36.0.0 ndk;28.2.13676358
       - name: Build and lint the proof APK
         working-directory: termux-pro-app
         run: |
@@ -109,6 +111,16 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '21.0.9+10.0.LTS'
+      - name: Set up the emulator SDK tools
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          cmdline-tools-version: '13114758'
+          log-accepted-android-sdk-licenses: false
+          packages: platform-tools
       - name: Fetch this run's APK
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
