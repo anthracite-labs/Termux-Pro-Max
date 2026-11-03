@@ -6,10 +6,12 @@ passed merely by building it. See [execution status](../EXECUTION_STATUS.md).
 
 The development application ID is `com.anthracitelabs.termuxpro`. This is a
 working identity, not an assertion of domain ownership or a frozen release ID.
-The intended primary-user package prefix is
+The intended primary-user package prefix for future packages is
 `/data/user/0/com.anthracitelabs.termuxpro/files/usr`; the proof discovers the
 actual files directory using `Context` and records it rather than assuming it.
-No release packages are built against that path yet.
+No release packages are built against that path yet. The harness exclusively uses
+`files/proof/run-<random>/usr/bin`, then deletes that run's known entries and empty
+directories. It never creates, deletes or replaces commands in `files/usr/bin`.
 
 ## Build and host checks
 
@@ -40,18 +42,27 @@ Select a device using `ANDROID_SERIAL` if necessary. The script installs the
 debug APK, starts the Activity under its own app UID, runs the probe and writes
 `build/evidence/device.log`. You can also open the app and press **Run execution
 proof**, then retrieve `files/proof.log` with `adb exec-out run-as`.
-The installed proof app and its test-generated `usr/bin/gh` are left on device.
+The installed proof app and `files/proof.log` remain on device. Per-run fixtures
+are cleaned after completion; unexpected files prevent directory deletion and
+produce a cleanup failure instead of being recursively removed.
 
 The protected driver invokes the protected launcher directly, then its writable
 `usr/bin/gh` symlink using `execve`, PATH `execvp`, PATH `posix_spawnp`, raw
 `SYS_execve`, and relative `execve`. Every variant supplies `forged-git` as
-`argv[0]`. The probe checks `AT_EXECFN`, normalizes its parent directory without
+`argv[0]`. The probe checks `AT_EXECFN`, normalizes the parent directories of
+both the invoked path and expected paths without
 resolving away the command name, and compares the resolved file to the expected
 protected executable. It also verifies empty, spaced, Unicode, separator and
 quoted arguments. Exit 64 means identity/path mismatch; 65 means argument mismatch;
 66 means the observed identity differs from the driver's expected identity;
 126 in the driver means an exec failure (errno is logged). A kernel reporting
 only the resolved launcher path for a symlink must therefore fail the candidate.
+Each case has a one-second deadline and its own process group. A timeout kills
+the case group and reaps the direct child, logs `timeout=1`, and exits 124.
+SIGTERM/SIGINT also trigger cleanup and a distinct `interrupted=<signal>` report.
+The Activity's outer 15-second watchdog sends SIGTERM and allows three seconds
+for native cleanup before a final forced termination. A timeout is an experiment
+failure, not evidence of an Android execution-policy rejection.
 
 `execfn_hex` and `argv0_hex` encode UTF-8 bytes as hexadecimal. Only controlled
 fixture arguments are recorded; the proof does not dump the environment.
@@ -61,6 +72,13 @@ The Linux tests additionally demonstrate that
 These checks are **not** production authorization: environment values and the
 writable filesystem are controlled by the test, and no TOCTOU protection or
 package-ownership registry is implemented here.
+
+The PR-triggered [host workflow](../.github/workflows/host-proof.yml) runs these
+regressions (including directory aliases, hung-child cleanup and run isolation),
+shell syntax and whitespace checks on Ubuntu 24.04. Host/tool/source identities
+and test logs are uploaded as `host-proof-evidence`, including on failure.
+It does not build the APK or run Android tests; Gradle/lint remain separate local
+evidence until an Android build job is added.
 
 A probe PASS only describes that device/run. Save the APK hash, native ELF
 inspection, git revision, exact command, and log alongside the matrix entry in

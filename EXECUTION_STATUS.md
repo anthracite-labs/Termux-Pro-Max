@@ -7,7 +7,8 @@ Android architecture gate to PASS.
 
 ## Foundation and scope
 
-The owner's “Execute” instruction authorizes implementation against the blueprint.
+This PR contains an experimental harness alongside the documentation baseline;
+it does not approve the execution architecture or authorize a production release.
 For the execution experiment only, use `com.anthracitelabs.termuxpro`, arm64-v8a,
 minSdk 30, targetSdk/compileSdk 36 and bundled test fixtures. The development
 namespace matches the application ID. Release application identity, compiled
@@ -45,10 +46,10 @@ remain unresolved. The experiment fetches no runtime packages.
 These source checks do not revalidate Play policy or all sources in README.
 Page hashes identify retrieved snapshots, not immutable future URLs.
 
-## Verification of this implementation slice
+## Original verification at `5820ff4`
 
 Host: Linux x86-64; repository baseline `df162f0`; implementation source is the
-commit containing this record. No builder or package manifest exists yet.
+original implementation commit `5820ff4`. No builder or package manifest exists yet.
 NDK 28.2.13676358, SDK/build tools 36/36.0.0, AGP 8.10.1,
 checksum-verified Gradle 8.11.1 and Eclipse Temurin JDK 21.0.9+10 were used.
 The JDK archive SHA-256 is
@@ -92,3 +93,44 @@ PTY/process semantics or actual GH/Git compatibility. No architecture ADR change
 are warranted from Linux results alone. Next: run
 `termux-pro-app/run-device-proof.sh` on the required arm64 Android matrix and
 record E0/E1 evidence before proceeding through T04–T06.
+
+## PR #1 review follow-up
+
+The review identified inconsistent directory canonicalization, package-tree
+mutation, unbounded child lifetimes, missing CI evidence and an overstated scope
+assertion. The scope description above is now neutral; this remains an experiment.
+
+- Both expected and invoked paths canonicalize their parent directories while
+  retaining their final basenames. A symlinked-parent regression covers protected,
+  PATH, relative and raw-syscall cases without accepting an unregistered alias.
+- Runs use fresh `files/proof/run-<random>/usr/bin` fixture trees. Cleanup removes
+  only known entries and empty directories, without walking symlinks or modifying
+  `files/usr/bin`. The Java preservation check verifies distinct runs, existing
+  package data, symlink targets and unexpected-file retention.
+- Every native case owns a process group and a one-second monotonic deadline.
+  Timeout and SIGTERM/SIGINT cleanup kills the group and reaps the direct child.
+  Timeout exits 124 with `timeout=1`; interruption is reported separately. The
+  Activity requests graceful native cleanup before its final forced termination.
+  Linux tests verify both timeout and termination leave no live direct child.
+- `.github/workflows/host-proof.yml` runs on PRs to main and branch pushes with
+  read-only repository permissions, immutable action revisions, a five-minute
+  job limit and uploaded host/source/tool/test logs. It runs the host regression
+  suite plus shell syntax and whitespace checks. Check the PR's current-head
+  checks for observed CI status; workflow configuration alone is not a CI PASS.
+
+Local follow-up validation: **9 host tests PASS**; wrapper APK build and lint
+PASS (**0 errors, 6 existing warnings**); native AArch64 dynamic ELF/entry-point,
+16 KB load alignment, APK byte-preservation, extraction-flag and debug-signature
+checks PASS. Shell syntax, YAML parsing and patch whitespace checks PASS.
+Host tests now require a JDK/compiler as well as Python and GCC. Logs are under
+`termux-pro-app/build/evidence/review-host-tests.log`, `review-build.log` and
+`static-validation.json`. Android runtime checks are still **NOT RUN**. No
+launcher ADR or E2/E3 architecture gate has been approved.
+
+Follow-up artifacts replace the local outputs above; their SHA-256 values are:
+
+| Artifact | SHA-256 |
+|---|---|
+| Debug proof APK | `45b4217f3876179a356040af9711c448517eb765f42bc82d65f8acbe93192af3` |
+| `libtp-launcher.so` | `c8d7cf7798dce19bfd460c262e0e95097bfed2f3f7a110c980bd42e69a787275` |
+| `libtp-driver.so` | `c96974be0e358a1f07f9fa330887dc53c3ba5ad6136fd63d157f0f5833b904e4` |

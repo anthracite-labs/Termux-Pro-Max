@@ -12,6 +12,7 @@ import android.widget.TextView;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 /** E0/E1 experiment. This is not the terminal application or a package launcher. */
@@ -46,17 +47,19 @@ public final class ProofActivity extends Activity {
     private String runProof() {
         File log = new File(getFilesDir(), "proof.log");
         Process child = null;
+        Path runRoot = null;
+        String result = "E0/E1=FAIL incomplete";
         try {
-            File prefix = new File(getFilesDir(), "usr");
+            Files.write(log.toPath(), new byte[0]);
+            runRoot = ProofFiles.createRun(getFilesDir().toPath());
+            File prefix = runRoot.resolve("usr").toFile();
             File bin = new File(prefix, "bin");
             Files.createDirectories(bin.toPath());
             File launcher = new File(getApplicationInfo().nativeLibraryDir, "libtp-launcher.so");
             File driver = new File(getApplicationInfo().nativeLibraryDir, "libtp-driver.so");
             File entry = new File(bin, "gh");
-            Files.deleteIfExists(entry.toPath());
             Os.symlink(launcher.getAbsolutePath(), entry.getAbsolutePath());
             File unregistered = new File(bin, "unregistered");
-            Files.deleteIfExists(unregistered.toPath());
             Os.symlink(launcher.getAbsolutePath(), unregistered.getAbsolutePath());
             String header = "APP_ID=" + getPackageName()
                 + "\nAPI=" + Build.VERSION.SDK_INT + " targetSdk=" + getApplicationInfo().targetSdkVersion
@@ -73,28 +76,39 @@ public final class ProofActivity extends Activity {
             builder.environment().put("TP_PROOF_LAUNCHER", launcher.getAbsolutePath());
             builder.environment().put("PATH", bin + ":/system/bin");
             child = builder.start();
-            String result;
             if (!child.waitFor(15, TimeUnit.SECONDS)) {
-                child.destroyForcibly();
+                stopDriver(child);
                 result = "E0/E1=FAIL timeout";
             } else {
-                result = "E0/E1 candidate probes=" + (child.exitValue() == 0 ? "PASS" : "FAIL")
-                    + " exit=" + child.exitValue() + " (matrix review still required)";
+                result = child.exitValue() == 124 ? "E0/E1=FAIL per-case timeout"
+                    : "E0/E1 candidate probes=" + (child.exitValue() == 0 ? "PASS" : "FAIL")
+                        + " exit=" + child.exitValue() + " (matrix review still required)";
             }
+        } catch (Exception error) {
+            result = "E0/E1=FAIL " + error + "\nE2/E3=NOT RUN";
+        } finally {
+            try {
+                if (child != null && child.isAlive()) stopDriver(child);
+                if (runRoot != null) ProofFiles.deleteRun(runRoot);
+            } catch (Exception cleanupError) {
+                result = "E0/E1=FAIL cleanup " + cleanupError;
+            }
+        }
+        try {
             Files.write(log.toPath(), (result + "\n").getBytes(StandardCharsets.UTF_8),
-                java.nio.file.StandardOpenOption.APPEND);
+                java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
             return new String(Files.readAllBytes(log.toPath()), StandardCharsets.UTF_8);
         } catch (Exception error) {
-            String failure = "E0/E1=FAIL " + error + "\nE2/E3=NOT RUN";
-            try {
-                Files.write(log.toPath(), failure.getBytes(StandardCharsets.UTF_8),
-                    java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
-            } catch (Exception logError) {
-                failure += "\nCannot write proof.log: " + logError;
-            }
-            return failure;
-        } finally {
-            if (child != null && child.isAlive()) child.destroyForcibly();
+            return result + "\nE0/E1=FAIL writing/reading proof.log: " + error;
+        }
+    }
+
+    private static void stopDriver(Process child) throws InterruptedException {
+        child.destroy(); // SIGTERM lets the driver kill its case group and reap the child.
+        if (!child.waitFor(3, TimeUnit.SECONDS)) {
+            child.destroyForcibly();
+            if (!child.waitFor(3, TimeUnit.SECONDS))
+                throw new IllegalStateException("Driver did not terminate");
         }
     }
 }
