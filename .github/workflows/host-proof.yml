@@ -31,7 +31,9 @@ jobs:
           } > termux-pro-app/build/evidence/host-environment.log 2>&1
       - name: Check shell syntax and patch whitespace
         run: |
-          bash -n termux-pro-app/gradlew termux-pro-app/proof/build-native.sh termux-pro-app/run-device-proof.sh termux-pro-app/ci/*.sh
+          for script in termux-pro-app/gradlew termux-pro-app/proof/build-native.sh termux-pro-app/run-device-proof.sh termux-pro-app/ci/*.sh; do
+            bash -n "$script"
+          done
           git diff --check HEAD^ HEAD
       - name: Run host regressions (Android gates remain NOT RUN)
         run: |
@@ -56,7 +58,7 @@ jobs:
       - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
         with:
           distribution: temurin
-          java-version: '21.0.9+10'
+          java-version: '21.0.9+10.0.LTS'
       - name: Install the fixed Android build tools
         run: |
           sdkmanager --licenses < <(yes) > /dev/null

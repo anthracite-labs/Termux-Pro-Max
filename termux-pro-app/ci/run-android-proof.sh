@@ -29,8 +29,10 @@ trap collect_logs EXIT
 } > "$evidence/device-environment.log" 2>&1
 abi=$(adb shell getprop ro.product.cpu.abi | tr -d '\r')
 kernel=$(adb shell uname -m | tr -d '\r')
+policy=$(adb shell getenforce | tr -d '\r')
 test "$abi" = arm64-v8a
 test "$kernel" = aarch64
+test "$policy" = Enforcing
 bash run-device-proof.sh "$apk" 2>&1 | tee "$evidence/proof-run.log"
 # A launcher start alone cannot pass: require the full native driver result set.
 for variant in protected execve execvp spawnp raw relative; do

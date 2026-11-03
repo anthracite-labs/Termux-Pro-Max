@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class AndroidCi(unittest.TestCase):
-    def run_proof(self, report, abi='arm64-v8a'):
+    def run_proof(self, report, abi='arm64-v8a', policy='Enforcing'):
         (ROOT / 'build').mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
             folder = Path(directory)
@@ -27,6 +27,8 @@ if args[:2] == ['shell', 'getprop']:
            'ro.build.version.sdk': '30', 'ro.build.fingerprint': 'fixture'}.get(args[2], ''))
 elif args[:2] == ['shell', 'uname']:
     print('aarch64')
+elif args[:2] == ['shell', 'getenforce']:
+    print(os.environ['TP_TEST_POLICY'])
 elif args[0] == 'exec-out':
     print(os.environ['TP_TEST_REPORT'])
 elif args[0] == 'logcat':
@@ -38,7 +40,7 @@ else:
             apk = folder / 'proof.apk'
             apk.write_bytes(b'host-fixture-not-an-apk')
             env = dict(os.environ, PATH=directory + ':' + os.environ['PATH'],
-                       TP_TEST_REPORT=report, TP_TEST_ABI=abi)
+                       TP_TEST_REPORT=report, TP_TEST_ABI=abi, TP_TEST_POLICY=policy)
             result = subprocess.run(['bash', str(folder / 'ci/run-android-proof.sh'), str(apk)],
                                     env=env, capture_output=True, text=True, timeout=10)
             evidence = folder / 'build/evidence/android-arm64'
@@ -61,6 +63,12 @@ else:
 
     def test_wrong_abi_stays_unverified_and_collects_logs(self):
         result, status, logcat = self.run_proof('E0/E1 candidate probes=PASS exit=0', abi='x86_64')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('E0/E1=UNVERIFIED', status)
+        self.assertIn('fixture logcat', logcat)
+
+    def test_permissive_guest_stays_unverified(self):
+        result, status, logcat = self.run_proof('E0/E1 candidate probes=PASS exit=0', policy='Permissive')
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('E0/E1=UNVERIFIED', status)
         self.assertIn('fixture logcat', logcat)
