@@ -1,6 +1,6 @@
 # Termux Pro Android App — Implementation Specification
 
-**Status:** specification only; no Android app or device test has been executed.  
+**Status:** implementation requirements; the scoped E0/E1 observation is recorded in [VERIFICATION.md](VERIFICATION.md).
 **Source:** user-supplied *Termux Pro Architecture Report* as the baseline; research-backed corrections in [ARCHITECTURE.md](ARCHITECTURE.md).  
 **Shared interface:** [PACKAGE_CONTRACT.md](PACKAGE_CONTRACT.md). Sources cited as `[S#]` are indexed in [README.md](README.md#evidence-register).
 
@@ -74,7 +74,7 @@ User input -> normal Bash PATH lookup -> usr/bin/<name>
                                       -> command / child command
 ```
 
-**E1 design proof required:** Android kernel `execve()` of a writable symlink pointing into extracted protected native storage, together with trustworthy identification of the invocation path, is NOT yet proven. Use `AT_EXECFN` only after observing its behavior on supported Android versions. Never rely on spoofable `argv[0]` alone to authorize a launch. [S1][S2]
+**E1 design proof required:** Android kernel `execve()` of a writable symlink pointing into extracted protected native storage, together with identification of the invocation path, has passed the user-supplied OPPO API 36/4 KB fixture only; production routing and broader compatibility are not yet proven. Use `AT_EXECFN` only after observing its behavior on supported Android versions. Never rely on spoofable `argv[0]` alone to authorize a launch. [S1][S2]
 
 **E2 execution proof required:** The launcher must preserve: separate arguments including spaces/empty strings, environment variables (except intentionally stripped unsafe variables), stdin/stdout/stderr, terminal file descriptors, exit status and signal semantics. It must avoid infinite loops when entry points and real files are confused. `linker64` is only for supported dynamic ELF programs, not scripts or arbitrary static binaries. [S2][S16]
 

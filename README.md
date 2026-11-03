@@ -2,13 +2,13 @@
 
 **Edition:** documentation baseline v0.1  
 **Prepared:** 3 November 2026  
-**Status:** blueprint baseline; execution-proof implementation started, no device acceptance yet
+**Status:** implementation in progress; E0/E1 passed one user-supplied OPPO device fixture; E2/E3 remain pending
 **Input:** `Termux_Pro_Architecture_Report.md` supplied by the project owner  
 **Scope:** documentation for a standalone package builder and a new Android terminal application; not a fork of existing Termux.
 
 Implementation progress is tracked in [EXECUTION_STATUS.md](EXECUTION_STATUS.md).
 The first runnable experiment is the [Android E0/E1 execution harness](termux-pro-app/README.md);
-it is not yet a terminal or a package builder. The publication-time statements
+the standalone builder and Android terminal are subsequent implementation work. The publication-time statements
 below describe the original documentation baseline.
 
 ## Read this first

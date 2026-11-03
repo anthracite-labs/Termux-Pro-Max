@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-apk=${1:?usage: run-android-proof.sh PROOF_APK}
-evidence=build/evidence/android-arm64
+apk=${1:?usage: run-device-acceptance.sh PROOF_APK}
+evidence=build/evidence/device-arm64
 mkdir -p "$evidence"
 printf 'E0/E1=UNVERIFIED\nE2/E3=NOT RUN\n' > "$evidence/status.txt"
-# The emulator action exposes its port, but does not export ANDROID_SERIAL.
-export ANDROID_SERIAL="emulator-${EMULATOR_PORT:-5580}"
+# Use ANDROID_SERIAL when supplied; otherwise adb requires exactly one attached device.
 collect_logs() {
     local result=$?
     trap - EXIT
@@ -17,6 +16,7 @@ collect_logs() {
     exit "$result"
 }
 trap collect_logs EXIT
+
 {
     git rev-parse HEAD
     shasum -a 256 "$apk"
@@ -40,4 +40,4 @@ for variant in protected execve execvp spawnp raw relative; do
 done
 grep -Fx 'case=unregistered exit=64 expected=64' build/evidence/device.log
 grep -Fx 'case=bad-arguments exit=65 expected=65' build/evidence/device.log
-printf 'E0/E1=PASS (this ARM64 emulator run only; matrix incomplete)\nE2/E3=NOT RUN\n' > "$evidence/status.txt"
+printf 'E0/E1=PASS (this ARM64 device run only; matrix incomplete)\nE2/E3=NOT RUN\n' > "$evidence/status.txt"

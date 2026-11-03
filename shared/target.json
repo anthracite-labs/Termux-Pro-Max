@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "application_id": "com.anthracitelabs.termuxpro",
+  "abi": "arm64-v8a",
+  "min_android_api": 30,
+  "target_android_api": 36,
+  "files_dir": "/data/user/0/com.anthracitelabs.termuxpro/files",
+  "prefix": "/data/user/0/com.anthracitelabs.termuxpro/files/usr",
+  "channel": "internal-bundled-apk",
+  "supported_android_user": 0,
+  "remote_native_packages": false
+}

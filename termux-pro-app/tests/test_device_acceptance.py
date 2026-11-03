@@ -16,7 +16,7 @@ class AndroidCi(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=ROOT / 'build') as directory:
             folder = Path(directory)
             (folder / 'ci').mkdir()
-            shutil.copyfile(ROOT / 'ci/run-android-proof.sh', folder / 'ci/run-android-proof.sh')
+            shutil.copyfile(ROOT / 'ci/run-device-acceptance.sh', folder / 'ci/run-device-acceptance.sh')
             shutil.copyfile(ROOT / 'run-device-proof.sh', folder / 'run-device-proof.sh')
             adb = folder / 'adb'
             adb.write_text('#!' + sys.executable + '\n' + '''
@@ -41,9 +41,9 @@ else:
             apk.write_bytes(b'host-fixture-not-an-apk')
             env = dict(os.environ, PATH=directory + ':' + os.environ['PATH'],
                        TP_TEST_REPORT=report, TP_TEST_ABI=abi, TP_TEST_POLICY=policy)
-            result = subprocess.run(['bash', str(folder / 'ci/run-android-proof.sh'), str(apk)],
+            result = subprocess.run(['bash', str(folder / 'ci/run-device-acceptance.sh'), str(apk)],
                                     env=env, capture_output=True, text=True, timeout=10)
-            evidence = folder / 'build/evidence/android-arm64'
+            evidence = folder / 'build/evidence/device-arm64'
             return result, (evidence / 'status.txt').read_text(), (evidence / 'logcat.log').read_text()
 
     def test_complete_native_report_can_pass_orchestration(self):
@@ -53,7 +53,7 @@ else:
         report += '\nE0/E1 candidate probes=PASS exit=0 (matrix review still required)'
         result, status, _ = self.run_proof(report)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn('E0/E1=PASS (this ARM64 emulator run only', status)
+        self.assertIn('E0/E1=PASS (this ARM64 device run only', status)
 
     def test_success_marker_without_native_cases_stays_unverified(self):
         result, status, logcat = self.run_proof('E0/E1 candidate probes=PASS exit=0')
