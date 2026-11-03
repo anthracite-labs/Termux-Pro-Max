@@ -134,3 +134,10 @@ Follow-up artifacts replace the local outputs above; their SHA-256 values are:
 | Debug proof APK | `45b4217f3876179a356040af9711c448517eb765f42bc82d65f8acbe93192af3` |
 | `libtp-launcher.so` | `c8d7cf7798dce19bfd460c262e0e95097bfed2f3f7a110c980bd42e69a787275` |
 | `libtp-driver.so` | `c96974be0e358a1f07f9fa330887dc53c3ba5ad6136fd63d157f0f5833b904e4` |
+
+The first host CI run at `cfd6421` stopped before tests because checkout depth 1
+caused Git to report inherited Markdown as newly added lines. A local shallow
+clone reproduced this failure. The workflow now fetches depth 2 and checks
+`git diff --check HEAD^ HEAD`: PR merge runs check against the base parent and
+push runs check against the preceding commit. This retains the whitespace gate
+while limiting it to the actual change. Final CI status is recorded on PR #1.
