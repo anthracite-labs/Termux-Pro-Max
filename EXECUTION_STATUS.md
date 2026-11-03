@@ -141,3 +141,26 @@ clone reproduced this failure. The workflow now fetches depth 2 and checks
 `git diff --check HEAD^ HEAD`: PR merge runs check against the base parent and
 push runs check against the preceding commit. This retains the whitespace gate
 while limiting it to the actual change. Final CI status is recorded on PR #1.
+
+## Android CI build and ARM64 emulator integration
+
+The execution-proof workflow now has Ubuntu 24.04 jobs for host checks, an APK
+build/lint, and an ARM64 emulator attempt. It runs on PRs to main and pushes to
+main. The build publishes **termux-pro-proof-apk** (debug APK, SHA-256 and source
+revision), plus **termux-pro-proof-build-logs**. The emulator job consumes that
+same artifact and publishes **termux-pro-proof-device-logs**, including on failure.
+All actions are pinned and workflow repository permissions remain read-only.
+
+The emulator configuration is Android API 30 / google_apis / arm64-v8a, software
+emulation, with a five-minute boot deadline. The proof wrapper checks the guest's
+ABI and kernel architecture, runs the existing E0/E1 proof, requires all eight
+native case results and records logs before emulator shutdown. E0/E1 status stays
+UNVERIFIED unless these checks actually pass. Host tests of the orchestration use
+fake adb data and never count as device evidence.
+
+**Current Android gate state: E0/E1 UNVERIFIED, test execution pending.** Ubuntu's
+Google emulator is an x86-64 host binary; rejection of the ARM64 system image or
+failure to boot is an infrastructure limitation, not successful Android testing.
+Do not substitute x86/ABI translation, ignore the failure, or promote this entry
+without successful Android logs. The API/page-size/physical-device matrix and
+ADR-004 remain unapproved. E2, E3 and the package builder have not been started.
