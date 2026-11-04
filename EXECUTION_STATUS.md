@@ -130,3 +130,35 @@ Java consumer's static checks. Terminal assembleDebug/lintDebug PASS (no lint
 errors; warnings remain). Physical-device instrumentation is implemented and
 compiled separately; **not run**. Android E2, E3, app PTY/bootstrap/UI acceptance,
 rotation/background/accessibility, 16 KB and broader compatibility remain open.
+
+## Review checkpoint: PR #2 path aliases and PTY assertion (4 November 2026)
+
+Equivalent ancestor aliases of the fixed compiled app prefix now compare by
+canonical filesystem identity. The prefix itself must remain a real directory;
+registered targets and command names remain constrained. Other private roots,
+symlinked registry files/prefixes, forged identity and invalid targets are rejected.
+The Android acceptance fixture captures all three TTY checks before redirecting
+its result file. Its actual TTY-report prologue passes on a Linux PTY and fails
+for pipe descriptors; this is host regression evidence only.
+
+Local commands, from `/workspace/termux-terminal-fix`:
+
+```sh
+JAVA_HOME=/workspace/android-tools/jdk-21.0.9+10 python3 -m unittest discover -s termux-pro-app/tests -v
+python3 -m unittest discover -s shared/tests -v
+TP_NDK_HOME=/workspace/android-tools/sdk/ndk/28.2.13676358 TP_SOURCE_CACHE=/workspace/source-inputs ./termux-pro-builder/build.sh bootstrap
+termux-pro-app/app/build-native.sh /workspace/android-tools/sdk/ndk/28.2.13676358 /workspace/scratch/checkpoint-pr2-native
+JAVA_HOME=/workspace/android-tools/jdk-21.0.9+10 ANDROID_HOME=/workspace/android-tools/sdk GRADLE_USER_HOME=/workspace/android-tools/gradle-home termux-pro-app/gradlew --offline --no-daemon -p termux-pro-app :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+/workspace/android-tools/sdk/build-tools/36.0.0/apksigner verify termux-pro-app/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Results: **27 app/native tests PASS**, **6 shared/evidence tests PASS**; fresh
+Bash/ncurses/readline source bootstrap PASS_STATIC; ARM64 native ELF/interpreter/
+16 KB alignment checks PASS_STATIC; app and instrumentation APK assembly PASS;
+Android lint **0 errors, 3 warnings**; debug APK signature verifies. Local logs
+are `/workspace/scratch/checkpoint-pr2-{host,shared,bootstrap,apk}.log` and native
+metadata is `/workspace/scratch/checkpoint-pr2-native.json`.
+
+Android E2, actual source-built package execution and terminal instrumentation
+remain **NOT RUN**. E0/E1 remain scoped to the supplied OPPO fixture and original
+evidence revision. No release, universal compatibility or PR merge is authorized.

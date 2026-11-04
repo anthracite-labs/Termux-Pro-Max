@@ -30,6 +30,7 @@ class Runtime(unittest.TestCase):
                  '-DTP_PREFIX="' + str(cls.prefix) + '"', '-I' + str(ROOT.parent / 'shared/native')]
         subprocess.run(['gcc', *flags, str(ROOT / 'app/native/launcher.c'),
                         str(ROOT.parent / 'shared/native/tp_exec.c'), '-o', str(cls.launcher)], check=True)
+        cls.flags = flags
         target = cls.work / 'target.c'
         target.write_text('#include <stdio.h>\nint main(int argc, char **argv) { for(int i=1;i<argc;i++) printf("[%s]",argv[i]); puts(""); return 7; }\n')
         cls.target = cls.prefix / 'libexec/tp-real/fixture'
@@ -69,6 +70,33 @@ class Runtime(unittest.TestCase):
             self.assertEqual(subprocess.run([str(self.entry)], capture_output=True).returncode, 126)
         finally:
             self.target.write_bytes(original)
+
+    def test_compiled_prefix_alias_uses_canonical_managed_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory); real = folder / 'real-files'; real.mkdir()
+            alias = folder / 'alias-files'; alias.symlink_to(real, target_is_directory=True)
+            prefix = real / 'usr'
+            for name in ['bin', 'libexec/tp-real', 'var/lib/termux-pro/commands']:
+                (prefix / name).mkdir(parents=True)
+            target = prefix / 'libexec/tp-real/fixture'; target.write_bytes(self.target.read_bytes()); target.chmod(0o600)
+            (prefix / 'var/lib/termux-pro/commands/fixture').write_text('libexec/tp-real/fixture\n')
+            launcher = folder / 'launcher'
+            flags = [x for x in self.flags if not x.startswith('-DTP_PREFIX=')]
+            flags.append('-DTP_PREFIX="' + str(alias / 'usr') + '"')
+            subprocess.run(['gcc', *flags, str(ROOT / 'app/native/launcher.c'),
+                            str(ROOT.parent / 'shared/native/tp_exec.c'), '-o', str(launcher)], check=True)
+            (prefix / 'bin/fixture').symlink_to(launcher)
+            for args in [[str(alias / 'usr/bin/fixture'), 'value'], [str(launcher), '--tp-command', 'fixture', 'value']]:
+                result = subprocess.run(args, text=True, capture_output=True, timeout=5)
+                self.assertEqual(result.returncode, 7, result.stderr)
+                self.assertEqual(result.stdout, '[value]\n')
+            registry = prefix / 'var/lib/termux-pro/commands/fixture'
+            saved = folder / 'forged-registry'; saved.write_text(registry.read_text())
+            registry.unlink(); registry.symlink_to(saved)
+            self.assertEqual(subprocess.run([str(launcher), '--tp-command', 'fixture'], capture_output=True).returncode, 64)
+            registry.unlink(); registry.write_text(saved.read_text())
+            moved = real / 'moved-usr'; prefix.rename(moved); prefix.symlink_to(moved)
+            self.assertEqual(subprocess.run([str(launcher), '--tp-command', 'fixture'], capture_output=True).returncode, 64)
 
     def launch(self, command, args, cwd=None):
         array = (ctypes.c_char_p * (len(args) + 1))(*[a.encode() for a in args], None)

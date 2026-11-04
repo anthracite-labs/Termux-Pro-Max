@@ -34,12 +34,16 @@ int main(int argc, char **argv) {
     const char *execfn = (const char *)getauxval(AT_EXECFN);
     if (!execfn || entry(execfn, invoked) || !realpath("/proc/self/exe", self)
         || !realpath(invoked, resolved) || strcmp(resolved, self)) goto rejected;
+    char runtime_root[PATH_MAX], bin[PATH_MAX];
+    struct stat prefix_metadata;
+    if (lstat(TP_PREFIX, &prefix_metadata) || !S_ISDIR(prefix_metadata.st_mode)
+        || !realpath(TP_PREFIX, runtime_root)
+        || snprintf(bin, sizeof(bin), "%s/bin/", runtime_root) >= (int)sizeof(bin)) goto rejected;
     const char *name;
     if (!strcmp(invoked, self)) {
         if (argc < 3 || strcmp(argv[1], "--tp-command")) goto rejected;
         name = argv[2]; argc -= 2; argv += 2;
     } else {
-        const char *bin = TP_PREFIX "/bin/";
         if (strncmp(invoked, bin, strlen(bin))) goto rejected;
         name = invoked + strlen(bin);
     }
@@ -53,7 +57,7 @@ int main(int argc, char **argv) {
     ssize_t count = read(fd, contents, sizeof(contents)); close(fd);
     int size = snprintf(expected, sizeof(expected), "libexec/tp-real/%s\n", name);
     if (count != size || memcmp(contents, expected, (size_t)size)) goto rejected;
-    if (snprintf(target, sizeof(target), TP_PREFIX "/libexec/tp-real/%s", name) >= (int)sizeof(target)
+    if (snprintf(target, sizeof(target), "%s/libexec/tp-real/%s", runtime_root, name) >= (int)sizeof(target)
         || !realpath(target, canonical) || strcmp(canonical, target)) goto rejected;
     // Packages use their fixed RUNPATH; inherited loader injection is unsupported.
     unsetenv("LD_PRELOAD"); unsetenv("LD_LIBRARY_PATH"); unsetenv("LD_AUDIT");
