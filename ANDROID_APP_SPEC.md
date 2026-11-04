@@ -4,6 +4,15 @@
 **Source:** user-supplied *Termux Pro Architecture Report* as the baseline; research-backed corrections in [ARCHITECTURE.md](ARCHITECTURE.md).  
 **Shared interface:** [PACKAGE_CONTRACT.md](PACKAGE_CONTRACT.md). Sources cited as `[S#]` are indexed in [README.md](README.md#evidence-register).
 
+## Implementation alignment — merged checkpoint, 4 November 2026
+
+The `termux-pro-app/app` module now builds a **single-session experimental terminal APK** with pinned terminal renderer/view components, a native PTY bridge, managed-command launcher, and bundled source-built packages. `TerminalApp` sets up HOME separately from the fixed `files/usr` prefix; `BootstrapInstaller` validates ZIP/package identity and ELF inventory, stages a transaction with a recovery journal, and repairs managed links. The launcher canonicalizes equivalent parent-directory aliases while refusing symlinked or incorrect private-prefix/registry entries. Android app and instrumentation APKs compile and lint in [PR #3's successful CI run](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41769436863).
+
+**No installed-app acceptance has passed on an actual Android device.** The PTY/Bash/child/resize/Ctrl+C/Unicode instrumentation test is present and its prior TTY-redirection logic defect was corrected in PR #2, but the test APK has not been executed on Android. The separately supplied OPPO E0/E1 observation pertains to the older proof fixture, not this terminal APK. E2 system-linker semantics, running Bash/SSH/Git, package import and repair on Android, rotation/lifecycle/accessibility, 16 KB pages, and E3 real GH → Git → SSH are still release blockers.
+
+Scope remains primary Android user profile, ARM64 and APK-bundled native packages. There is no remote executable-package downloader, approved Play distribution channel, final release signature or general compatibility claim.
+
+
 ## 1. Objective and user-visible success
 
 | Plain language | Engineering requirement |
