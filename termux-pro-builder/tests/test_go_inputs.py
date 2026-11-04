@@ -2,6 +2,7 @@ import base64
 import hashlib
 import io
 import json
+import subprocess
 from pathlib import Path
 import tarfile
 import tempfile
@@ -74,9 +75,9 @@ class GoInputs(unittest.TestCase):
             with tarfile.open(path, 'w:gz') as tar:
                 entry = tarfile.TarInfo('source/hello.txt'); entry.size = 6
                 tar.addfile(entry, io.BytesIO(b'hello\n'))
-            blob = hashlib.sha1(b'blob 6\0hello\n').digest()
+            blob = bytes.fromhex(subprocess.check_output(['git', 'hash-object', '--stdin'], input=b'hello\n').decode().strip())
             tree = b'100644 hello.txt\0' + blob
-            expected = hashlib.sha1(b'tree ' + str(len(tree)).encode() + b'\0' + tree).hexdigest()
+            expected = subprocess.check_output(['git', 'hash-object', '-t', 'tree', '--stdin'], input=tree).decode().strip()
             self.assertEqual(builder.archive_git_tree(path), expected)
             source = json.loads((builder.BASE / 'sources.lock').read_text())['gh']
             with mock.patch.object(builder, 'fetch', return_value=path):

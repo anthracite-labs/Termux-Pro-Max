@@ -78,7 +78,8 @@ jobs:
             cat "$ANDROID_HOME/ndk/28.2.13676358/source.properties"
             ./gradlew --version
           } > build/evidence/apk/build-environment.log 2>&1
-          ./gradlew --no-daemon :proof:assembleDebug :proof:lintDebug 2>&1 | tee build/evidence/apk/build.log
+          ./gradlew --no-daemon --dependency-verification strict :proof:assembleDebug :proof:lintDebug 2>&1 | tee build/evidence/apk/build.log
+          python3 ci/check-gradle-security.py 2>&1 | tee build/evidence/apk/gradle-security.log
       - name: Stage the APK and its identity
         working-directory: termux-pro-app
         run: |
@@ -101,6 +102,7 @@ jobs:
           name: termux-pro-proof-build-logs
           path: |
             termux-pro-app/build/evidence/apk/
+            termux-pro-app/build/reports/dependency-verification/
             termux-pro-app/proof/build/reports/lint-results-debug.*
           retention-days: 14
 
@@ -193,7 +195,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build/evidence/terminal
-          ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug 2>&1 | tee build/evidence/terminal/build.log
+          ./gradlew --no-daemon --dependency-verification strict :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug 2>&1 | tee build/evidence/terminal/build.log
           mkdir -p build/terminal-apk
           cp app/build/outputs/apk/debug/app-debug.apk build/terminal-apk/termux-pro-debug.apk
           cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk build/terminal-apk/termux-pro-test.apk
@@ -215,5 +217,6 @@ jobs:
           name: termux-pro-terminal-build-logs
           path: |
             termux-pro-app/build/evidence/terminal/
+            termux-pro-app/build/reports/dependency-verification/
             termux-pro-app/app/build/reports/lint-results-debug.*
           retention-days: 14
