@@ -2,7 +2,7 @@ name: Android APK CI
 
 on:
   pull_request:
-    branches: [main, 'feature/**']
+    branches: [main, 'feature/**', 'integration/**']
   push:
     branches: [main]
   workflow_dispatch:
