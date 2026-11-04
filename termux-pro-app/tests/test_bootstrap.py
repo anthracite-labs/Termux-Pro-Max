@@ -37,10 +37,10 @@ class Bootstrap(unittest.TestCase):
     def tearDownClass(cls):
         cls.folder.cleanup()
 
-    def run_java(self, command, path, *args, expected=0):
+    def run_java(self, command, path, *args, expected=0, target_path=None):
         result = subprocess.run([self.java, '-cp', str(self.classes),
                                  'com.anthracitelabs.termuxpro.bootstrap.BootstrapHost', command,
-                                 str(path), str(self.target_path), *map(str, args)],
+                                 str(path), str(target_path or self.target_path), *map(str, args)],
                                 text=True, capture_output=True, timeout=20)
         if expected is None:
             self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -135,6 +135,32 @@ class Bootstrap(unittest.TestCase):
             (root / 'usr/libexec/tp-real/fixture').write_bytes(b'corruption')
             self.run_java('install', bootstrap, root, two, expected=None)
             self.assertEqual(sentinel.read_text(), 'keep runtime')
+
+    def test_private_directory_alias_keeps_the_frozen_literal_prefix(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory); real = folder / 'real-files'; real.mkdir()
+            alias = folder / 'alias-files'; alias.symlink_to(real, target_is_directory=True)
+            launcher = folder / 'launcher'; launcher.write_text('fixture'); launcher.chmod(0o700)
+            bootstrap = self.bootstrap(folder, alias, '1.0')
+            self.run_java('install', bootstrap, alias, launcher)
+            installed = json.loads((real / 'usr/var/lib/termux-pro/packages/fixture.json').read_text())
+            self.assertEqual(installed['prefix'], str(alias / 'usr'))
+            self.assertEqual((real / 'usr/bin/fixture').readlink(), launcher)
+
+    def test_alias_handling_rejects_other_private_roots_and_symlinked_prefix(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory); real = folder / 'files'; real.mkdir()
+            other = folder / 'other-profile'; other.mkdir()
+            home = real / 'home'; home.mkdir(); (home / 'keep').write_text('private data')
+            launcher = folder / 'launcher'; launcher.write_text('fixture'); launcher.chmod(0o700)
+            bootstrap = self.bootstrap(folder, real, '1.0')
+            target = dict(self.fixture.target); target['prefix'] = str(real / 'usr')
+            target_file = folder / 'target.json'; target_file.write_text(json.dumps(target))
+            self.run_java('install-bound', bootstrap, other, launcher, target_path=target_file, expected=None)
+            (real / 'usr').symlink_to(other, target_is_directory=True)
+            self.run_java('install-bound', bootstrap, real, launcher, target_path=target_file, expected=None)
+            self.assertEqual((home / 'keep').read_text(), 'private data')
+            self.assertFalse((other / 'bin').exists())
 
     def test_duplicate_json_keys_and_trailing_values_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

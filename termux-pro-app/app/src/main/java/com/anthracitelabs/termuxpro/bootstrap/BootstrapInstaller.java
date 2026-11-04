@@ -121,7 +121,10 @@ public final class BootstrapInstaller {
         install(bootstrap, expectedHash, launcher, target, false);
     }
     public void install(Path bootstrap, String expectedHash, Path launcher, Map<String, Object> target, boolean repair) throws IOException {
-        check(root.resolve("usr").toString().equals(target.get("prefix")), "fixed prefix/user profile mismatch");
+        Path compiled = java.nio.file.Paths.get(string(target.get("prefix")));
+        check(compiled.isAbsolute() && compiled.normalize().equals(compiled)
+              && java.nio.file.Paths.get("usr").equals(compiled.getFileName())
+              && compiled.getParent().toRealPath().equals(root), "fixed prefix/user profile mismatch");
         check(!Files.isSymbolicLink(root.resolve("tp-install.lock")), "unsafe install lock");
         try (FileChannel channel = FileChannel.open(root.resolve("tp-install.lock"), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
              FileLock lock = channel.tryLock()) {

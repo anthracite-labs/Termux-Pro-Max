@@ -52,7 +52,7 @@ public final class TerminalApp extends Application implements TerminalSessionCli
                 Path files = getFilesDir().toPath().toRealPath();
                 Map<String, Object> target = PackageContract.json(asset("target.json"));
                 String prefix = PackageContract.string(target.get("prefix"));
-                if (!files.resolve("usr").toString().equals(prefix)) throw new IllegalArgumentException("This Android user/profile has a different private prefix");
+                if (!java.nio.file.Paths.get(prefix).getParent().toRealPath().equals(files)) throw new IllegalArgumentException("This Android user/profile has a different private prefix");
                 Path bundle = getCacheDir().toPath().resolve("bundled-bootstrap.zip");
                 Files.deleteIfExists(bundle);
                 try (InputStream input = getAssets().open("bootstrap.zip")) { Files.copy(input, bundle, StandardCopyOption.REPLACE_EXISTING); }

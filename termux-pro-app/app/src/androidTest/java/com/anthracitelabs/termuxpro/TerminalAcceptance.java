@@ -52,8 +52,9 @@ public final class TerminalAcceptance {
         TerminalSession shell = main(() -> app.session); int pid = main(shell::getPid);
         String token = UUID.randomUUID().toString();
         Path log = directory.resolve(token + ".log");
-        String command = "{ printf 'bash=%s\\n' \"$BASH_VERSION\"; "
-            + "[[ -t 0 && -t 1 && -t 2 ]]; printf 'tty=%d\\n' \"$?\"; "
+        String command = "[[ -t 0 && -t 1 && -t 2 ]]; tp_tty=$?; "
+            + "{ printf 'bash=%s\\n' \"$BASH_VERSION\"; "
+            + "printf 'tty=%d\\n' \"$tp_tty\"; "
             + "bash --noprofile --norc -c '[[ $# == 3 && $1 == \"\" && $2 == \"a b\" && $3 == \"日本語\" ]]' fixture '' 'a b' '日本語'; "
             + "printf 'managed-child=%d\\n' \"$?\"; "
             + "value=$(printf 'a b' | /system/bin/cat); [[ $value == 'a b' ]]; printf 'pipe=%d\\n' \"$?\"; "

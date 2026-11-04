@@ -201,3 +201,79 @@ resolved without weakening package validation; failed artifacts/logs are preserv
 Build warnings include upstream cross-compile assumptions and API-macro redefinition.
 No actual Android Git/SSH/HTTPS, E2, E3 or terminal runtime pass is claimed.
 No GH, Python or Node implementation was started. Release gates remain open.
+
+## Review checkpoint: PR #2 path aliases and PTY assertion (4 November 2026)
+
+Equivalent ancestor aliases of the fixed compiled app prefix now compare by
+canonical filesystem identity. The prefix itself must remain a real directory;
+registered targets and command names remain constrained. Other private roots,
+symlinked registry files/prefixes, forged identity and invalid targets are rejected.
+The Android acceptance fixture captures all three TTY checks before redirecting
+its result file. Its actual TTY-report prologue passes on a Linux PTY and fails
+for pipe descriptors; this is host regression evidence only.
+
+Local commands, from `/workspace/termux-terminal-fix`:
+
+```sh
+JAVA_HOME=/workspace/android-tools/jdk-21.0.9+10 python3 -m unittest discover -s termux-pro-app/tests -v
+python3 -m unittest discover -s shared/tests -v
+TP_NDK_HOME=/workspace/android-tools/sdk/ndk/28.2.13676358 TP_SOURCE_CACHE=/workspace/source-inputs ./termux-pro-builder/build.sh bootstrap
+termux-pro-app/app/build-native.sh /workspace/android-tools/sdk/ndk/28.2.13676358 /workspace/scratch/checkpoint-pr2-native
+JAVA_HOME=/workspace/android-tools/jdk-21.0.9+10 ANDROID_HOME=/workspace/android-tools/sdk GRADLE_USER_HOME=/workspace/android-tools/gradle-home termux-pro-app/gradlew --offline --no-daemon -p termux-pro-app :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+/workspace/android-tools/sdk/build-tools/36.0.0/apksigner verify termux-pro-app/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Results: **27 app/native tests PASS**, **6 shared/evidence tests PASS**; fresh
+Bash/ncurses/readline source bootstrap PASS_STATIC; ARM64 native ELF/interpreter/
+16 KB alignment checks PASS_STATIC; app and instrumentation APK assembly PASS;
+Android lint **0 errors, 3 warnings**; debug APK signature verifies. Local logs
+are `/workspace/scratch/checkpoint-pr2-{host,shared,bootstrap,apk}.log` and native
+metadata is `/workspace/scratch/checkpoint-pr2-native.json`.
+
+Android E2, actual source-built package execution and terminal instrumentation
+remain **NOT RUN**. E0/E1 remain scoped to the supplied OPPO fixture and original
+evidence revision. No release, universal compatibility or PR merge is authorized.
+
+
+## Integrated clean Git checkpoint
+
+PR #2 path/PTY commit `9320ef1f0d6460b2ffecd0a710711d87269eebb0` was normally
+pushed before integration. Its exact-head Ubuntu run
+[41766303775](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41766303775)
+passed host-proof, source-builder, proof APK and terminal APK jobs.
+The core branch integrates that history by a normal local merge, preserving both
+workstreams and their status records; neither pull request is merged.
+
+Integrated local checks: 27 app/native, six shared/evidence, nine builder tests
+PASS; Java closure=9 PASS_STATIC; ARM64 native build and ELF/interpreter/16 KB
+metadata checks PASS_STATIC. Debug app/test APK assembly and APK signature PASS;
+lint has **zero errors, four warnings** (two fixed `/data/` identity constants,
+pinned Gradle version, pre-Android-12 backup declaration). Inspection of the actual
+APK verifies that it bundles all nine packages from the correct combined bootstrap,
+with matching outer and package SHA-256 values.
+
+Exact integrated commands (repository `/workspace/Termux-Pro-Max`):
+
+```sh
+JAVA_HOME=/workspace/android-tools/jdk-21.0.9+10 python3 -m unittest discover -s termux-pro-app/tests -v
+python3 -m unittest discover -s shared/tests -v
+python3 -m unittest discover -s termux-pro-builder/tests -v
+/workspace/android-tools/jdk-21.0.9+10/bin/javac -Xlint:all -d /workspace/scratch/checkpoint-integrated-java termux-pro-app/app/src/main/java/com/anthracitelabs/termuxpro/bootstrap/*.java termux-pro-app/tests/BootstrapHost.java
+/workspace/android-tools/jdk-21.0.9+10/bin/java -cp /workspace/scratch/checkpoint-integrated-java com.anthracitelabs.termuxpro.bootstrap.BootstrapHost closure /workspace/checkpoint-builds/pr3-combined-20261104/packages shared/target.json
+termux-pro-app/app/build-native.sh /workspace/android-tools/sdk/ndk/28.2.13676358 /workspace/scratch/checkpoint-integrated-native
+JAVA_HOME=/workspace/android-tools/jdk-21.0.9+10 ANDROID_HOME=/workspace/android-tools/sdk GRADLE_USER_HOME=/workspace/android-tools/gradle-home TP_BOOTSTRAP_DIR=/workspace/checkpoint-builds/pr3-combined-20261104 termux-pro-app/gradlew --offline --no-daemon -p termux-pro-app :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+/workspace/android-tools/sdk/build-tools/36.0.0/apksigner verify termux-pro-app/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Logs/audits: `/workspace/scratch/checkpoint-integrated-{host,shared,builder,java,native,apk}.log`,
+`checkpoint-integrated-native.json`, `checkpoint-integrated-apk-audit.json` and
+`checkpoint-pr3-bundle-audit.json` in the same scratch directory. Local APKs retain
+their accurate pre-commit `+dirty` identity. The final pushed commit's independent
+CI result must be observed and linked in PR #3; a queued/running check is not PASS.
+Initial dirty-file backups remain in
+`/workspace/checkpoints/termux-20261104T031108Z/{pr2,pr3}`; previous source caches,
+build outputs and diagnostic evidence were preserved.
+
+E0/E1 remain PASS only for the original user-supplied OPPO proof fixture/revision.
+Actual Android E2, E3, source-built Git/SSH/HTTPS and terminal acceptance remain
+NOT RUN. No further implementation phase or release is authorized by this checkpoint.

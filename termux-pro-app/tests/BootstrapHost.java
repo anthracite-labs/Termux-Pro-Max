@@ -23,9 +23,10 @@ public final class BootstrapHost {
                 PackageContract.dependencies(packages);
                 System.out.println("Android Java package consumer: PASS_STATIC closure=" + packages.size() + "; Android runtime NOT RUN");
                 break;
+            case "install-bound":
             case "install":
                 Path files = Path.of(args[3]);
-                target.put("prefix", files.toRealPath().resolve("usr").toString());
+                if (args[0].equals("install")) target.put("prefix", files.toAbsolutePath().resolve("usr").toString());
                 String stop = args.length > 5 ? args[5] : "";
                 BootstrapInstaller installer = new BootstrapInstaller(files, point -> {
                     if (point.equals(stop)) Runtime.getRuntime().halt(77);
