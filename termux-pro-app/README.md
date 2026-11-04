@@ -20,8 +20,8 @@ Linux x86-64, JDK/compiler 17+, Android SDK 36, build tools 36.0.0 and NDK r28c
 python3 -m unittest discover -s tests -v
 ```
 
-The [Ubuntu workflow](../.github/workflows/host-proof.yml) publishes
-`termux-pro-proof-apk` and build/lint/host logs. Emulator jobs have been removed.
+The [CI workflow](../.github/workflows/host-proof.yml) publishes
+`termux-pro-proof-apk` and build/lint/host logs. Building an APK does not establish physical ARM64 acceptance.
 
 ## Physical-device proof
 
@@ -100,22 +100,7 @@ of the test APK as a passing device run.
 GitHub Actions publishes `termux-pro-apk-candidate` (app plus instrumentation APK,
 checksums, source revision and bootstrap digest), separately from `termux-pro-proof-apk`.
 APK build/lint and archive checks do **not** prove it starts on Android.
-An automatic `emulator-smoke` job uses stable `macos-15-intel` and the
-minimum-supported Android 11 (API 30) Google APIs x86_64 image with ARM64
-translation. It installs the real candidate APK, launches `TerminalActivity`,
-requires a visible soft keyboard, commits text via Android's `InputConnection`,
-and checks that bundled Bash executes the resulting command. It saves logcat,
-Activity state, a screenshot and instrumentation results on failure.
-An earlier Android 16 emulator timed out booting. A later Android 11 emulator
-booted but suffered system-service ANRs and showed the launcher/system ANR dialog
-rather than the terminal during the IME test. The instrumentation now requires
-foreground-window focus before checking IME visibility, so this infrastructure
-failure is reported distinctly from a terminal-input failure. Neither emulator
-failure proves Android 16 or device keyboard compatibility. An unavailable
-emulator/ARM64 bridge must fail rather than count as successful Android execution.
-This remains **translated-ARM emulator evidence**, not native ARM64 E2/E3.
-The
-`Android APK CI` workflow can run `device-test` with a manual
+The `Android APK CI` workflow can run `device-test` with a manual
 `workflow_dispatch` and `run_device=true` on a self-hosted Linux runner labeled
 `android-device`, with ADB authorized to a connected ARM64 Android device.
 That gate launches the Activity, tests bundled Bash/PTY, and uploads device logs;
