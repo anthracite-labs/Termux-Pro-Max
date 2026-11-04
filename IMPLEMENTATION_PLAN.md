@@ -1,6 +1,6 @@
 # Termux Pro — Dependency-Ordered Implementation Plan
 
-**Status:** engineering plan only; no implementation performed or tests passed.  
+**Status:** engineering plan baseline; current implementation and evidence are tracked in [EXECUTION_STATUS.md](EXECUTION_STATUS.md).
 **Gating philosophy:** one thin, end-to-end proof before expanding. **No speculative package manager, custom linker, modified Bash or multi-ABI support.**  
 **Sources and references:** [README](README.md#evidence-register) · [Architecture](ARCHITECTURE.md) · [App](ANDROID_APP_SPEC.md) · [Builder](BUILDER_SPEC.md) · [Contract](PACKAGE_CONTRACT.md) · [Verification](VERIFICATION.md).
 

@@ -1,6 +1,6 @@
 # Termux Pro — Verification, Risks and Quality Gates
 
-**Status:** **test plan only**. No app, native launcher, source-built package, emulator run or physical-device result is provided with this document set.  
+**Status:** test plan plus recorded device evidence; see the scoped observations below and [execution status](EXECUTION_STATUS.md).
 **References:** [Architecture](ARCHITECTURE.md) · [Package contract](PACKAGE_CONTRACT.md) · [App spec](ANDROID_APP_SPEC.md) · [Builder spec](BUILDER_SPEC.md). `[S#]` links in [README](README.md#evidence-register).
 
 ## 1. Verification rules
@@ -13,7 +13,11 @@
 | One failure must not corrupt a working installation. | Archive validation, staging, rollback and crash-recovery tests are mandatory. |
 | A package should work with other packages. | Nested execution, argument preservation, libraries and interpreter behavior are integration tests. |
 
-**No `PASS` statuses are claimed in this document.** The commands below are **proposed future test commands**, not evidence that a current repository can execute them.
+## Recorded device evidence
+
+[E0/E1 OPPO fixture record](docs/evidence/oppo-cph2819-api36/README.md): user-supplied output on CPH2819 / Android 16 / API 36 / targetSdk 36 / ARM64 / 4096-byte pages. E0 PASS and E1 PASS **only for that device and fixture**; all eight expected case exits match. APK hash and source merge commit `c54afee` were checked before attribution. The log is not signed or cryptographically bound to the APK and contains no timestamp. E2 and E3 NOT RUN; 16 KB and broader compatibility NOT RUN.
+
+The scenarios below remain requirements. Host, build and device results must be reported separately; a configured workflow is not device evidence.
 
 ## 2. Environment and artifact identity
 
@@ -163,4 +167,4 @@ FAILURE ANALYSIS / FOLLOW-UP ADR:
 REVIEWER:
 ```
 
-**Publication status:** the evidence log remains unfilled. Future implementation teams must attach actual records rather than upgrading an architectural hypothesis to an unqualified factual claim.
+**Evidence status:** the scoped E0/E1 record above is filled. Remaining tests require actual records; do not generalize this fixture to universal compatibility or completed release gates.

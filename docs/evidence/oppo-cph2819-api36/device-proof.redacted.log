@@ -1,0 +1,46 @@
+APP_ID=com.anthracitelabs.termuxpro
+API=36 targetSdk=36
+ABIS=arm64-v8a,armeabi-v7a,armeabi
+page_size=4096
+fingerprint=[REDACTED; full device build fingerprint in raw/device-proof.log]
+PREFIX=[REDACTED per-run installation path; details in raw/device-proof.log]
+nativeLibraryDir=[REDACTED installation path; details in raw/device-proof.log]
+E2/E3=NOT RUN
+execfn_hex=[REDACTED raw device path; details in raw/device-proof.log]
+argv0_hex=666f726765642d676974
+identity=protected
+arguments=preserved
+case=protected exit=0 expected=0
+execfn_hex=[REDACTED raw device path; details in raw/device-proof.log]
+argv0_hex=666f726765642d676974
+identity=gh
+arguments=preserved
+case=execve exit=0 expected=0
+execfn_hex=[REDACTED raw device path; details in raw/device-proof.log]
+argv0_hex=666f726765642d676974
+identity=gh
+arguments=preserved
+case=execvp exit=0 expected=0
+execfn_hex=[REDACTED raw device path; details in raw/device-proof.log]
+argv0_hex=666f726765642d676974
+identity=gh
+arguments=preserved
+case=spawnp exit=0 expected=0
+execfn_hex=[REDACTED raw device path; details in raw/device-proof.log]
+argv0_hex=666f726765642d676974
+identity=gh
+arguments=preserved
+case=raw exit=0 expected=0
+execfn_hex=[REDACTED raw device path; details in raw/device-proof.log]
+argv0_hex=666f726765642d676974
+identity=gh
+arguments=preserved
+case=relative exit=0 expected=0
+execfn_hex=[REDACTED raw device path; details in raw/device-proof.log]
+argv0_hex=666f726765642d676974
+case=unregistered exit=64 expected=64
+execfn_hex=[REDACTED raw device path; details in raw/device-proof.log]
+argv0_hex=666f726765642d676974
+identity=protected
+case=bad-arguments exit=65 expected=65
+E0/E1 candidate probes=PASS exit=0 (matrix review still required)

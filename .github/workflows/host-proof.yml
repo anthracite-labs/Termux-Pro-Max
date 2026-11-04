@@ -1,0 +1,104 @@
+name: Execution proof
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  host-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Record host and source identity
+        run: |
+          mkdir -p termux-pro-app/build/evidence
+          {
+            git rev-parse HEAD
+            uname -sm
+            gcc --version
+            python3 --version
+            java -version
+            javac -version
+          } > termux-pro-app/build/evidence/host-environment.log 2>&1
+      - name: Check shell syntax and patch whitespace
+        run: |
+          for script in termux-pro-app/gradlew termux-pro-app/proof/build-native.sh termux-pro-app/run-device-proof.sh termux-pro-app/ci/*.sh; do
+            bash -n "$script"
+          done
+          git diff --check HEAD^ HEAD
+      - name: Run host regressions (Android gates remain NOT RUN)
+        run: |
+          set -o pipefail
+          python3 -m unittest discover -s termux-pro-app/tests -v 2>&1 | tee termux-pro-app/build/evidence/host-tests.log
+          python3 -m unittest discover -s shared/tests -v 2>&1 | tee termux-pro-app/build/evidence/shared-tests.log
+      - name: Preserve host evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: host-proof-evidence
+          path: termux-pro-app/build/evidence/*.log
+          retention-days: 14
+
+  android-apk:
+    needs: host-proof
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '21.0.9+10.0.LTS'
+      - name: Install the fixed Android build tools
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          cmdline-tools-version: '13114758'
+          log-accepted-android-sdk-licenses: false
+          packages: platform-tools platforms;android-36 build-tools;36.0.0 ndk;28.2.13676358
+      - name: Build and lint the proof APK
+        working-directory: termux-pro-app
+        run: |
+          set -o pipefail
+          mkdir -p build/evidence/apk
+          {
+            git rev-parse HEAD
+            java -version
+            cat "$ANDROID_HOME/ndk/28.2.13676358/source.properties"
+            ./gradlew --version
+          } > build/evidence/apk/build-environment.log 2>&1
+          ./gradlew --no-daemon :proof:assembleDebug :proof:lintDebug 2>&1 | tee build/evidence/apk/build.log
+      - name: Stage the APK and its identity
+        working-directory: termux-pro-app
+        run: |
+          mkdir -p build/apk
+          cp proof/build/outputs/apk/debug/proof-debug.apk build/apk/
+          git rev-parse HEAD > build/apk/source-revision.txt
+          cd build/apk
+          sha256sum proof-debug.apk > SHA256SUMS
+      - name: Publish the proof APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: termux-pro-proof-apk
+          path: termux-pro-app/build/apk/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve Android build and lint evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: termux-pro-proof-build-logs
+          path: |
+            termux-pro-app/build/evidence/apk/
+            termux-pro-app/proof/build/reports/lint-results-debug.*
+          retention-days: 14

@@ -1,6 +1,6 @@
 # Termux Pro — System Architecture and Decisions
 
-**State:** proposed; validated against upstream information, not against our own device builds.  
+**State:** candidate implementation; E0/E1 fixture evidence on one OPPO device is recorded in [verification](VERIFICATION.md); E2/E3 remain unverified.
 **Related:** [README](README.md) · [Builder](BUILDER_SPEC.md) · [App](ANDROID_APP_SPEC.md) · [Package contract](PACKAGE_CONTRACT.md) · [Tests](VERIFICATION.md).
 
 ## 1. Responsibility map
@@ -113,7 +113,7 @@ A script's kernel shebang (e.g. `#!/bin/sh`) does not automatically become a val
 
 ### ADR-004 — One protected multi-call launcher, if proven
 
-**Status:** PROPOSED / BLOCKED on device gate E1. **Reason:** a small executable in protected install storage can delegate target loading to `/system/bin/linker64` and can be reached by standard PATH-based child launches via generated symlinks. **Alternative A:** Termux-style exec-interception (supports many libc entry points; fails for direct raw syscalls, complicates preload inheritance). **Alternative B:** patch every child invocation to explicit `/system/bin/linker64 ...` (smaller runtime, potentially huge recipe burden). **Alternative C:** bundle every executable in APK native-library directory (simplifies direct exec but prevents adding programs later without app updates). **Do not claim selection is proved** until E1/E2 pass. **Sources:** [S1][S2][S10][S16].
+**Status:** CANDIDATE. E0/E1 PASS for the user-supplied OPPO CPH2819/API 36/4 KB fixture only ([record](docs/evidence/oppo-cph2819-api36/README.md)); E2/E3 and the broader matrix remain pending. **Reason:** a small executable in protected install storage can delegate target loading to `/system/bin/linker64` and can be reached by standard PATH-based child launches via generated symlinks. **Alternative A:** Termux-style exec-interception (supports many libc entry points; fails for direct raw syscalls, complicates preload inheritance). **Alternative B:** patch every child invocation to explicit `/system/bin/linker64 ...` (smaller runtime, potentially huge recipe burden). **Alternative C:** bundle every executable in APK native-library directory (simplifies direct exec but prevents adding programs later without app updates). **Do not claim selection is proved** until E1/E2 pass. **Sources:** [S1][S2][S10][S16].
 
 ### ADR-005 — Separate PTY JNI from launcher executable
 
@@ -156,6 +156,13 @@ No launcher design is “final” until E1–E3 pass. If E1 fails, the minimum f
 
 - **Verified upstream facts:** Android W^X restriction [S1]; explicit linker launch + its limits [S2]; Termux shared `$PREFIX` assumptions [S8]; Go direct `execve` possibility [S15]; APK native packaging behavior [S10].
 - **Project choices / reasoned inferences:** protected multi-call launcher; generated shortcuts; deterministic `tp-real` path; one active provider; build-time patch strategy; package manifest format.
-- **Unverified:** exact symlink/auxv invocation behavior under supported Android releases, launcher ELF packaging/execution, device-specific PTY and process behavior, Play approval for any future package delivery.
+- **Device-specific observation:** user-supplied OPPO API 36/4 KB output demonstrates the E0/E1 fixture at source revision `c54afee`; log-to-APK cryptographic binding is absent.
+- **Unverified:** broader API/page-size/OEM coverage, explicit E2 target loading, real E3 chaining, PTY/session behavior and Play distribution approval.
 
 All `[S#]` definitions and URLs are in [README.md](README.md#evidence-register).
+
+## ADR-009 — Fixed internal-build identity and independent candidate development
+
+Use `shared/target.json` as the single immutable build identity: `com.anthracitelabs.termuxpro`, arm64-v8a, minimum API 30, target API 36, primary Android user 0 and `/data/user/0/com.anthracitelabs.termuxpro/files/usr`. The device evidence observes this files-root model. Runtime checks must reject another canonical prefix; secondary profiles are not claimed. The initial channel is an internal APK with bundled payloads; external native downloads and Play release remain disabled.
+
+Following the owner's implementation instruction, builder, contract and terminal code may proceed as **candidate implementations** while E2/E3 device tests are pending. This relaxes implementation ordering, not acceptance: no unrun test becomes PASS, ADR-004 is not final, and release remains blocked on VERIFICATION.md.

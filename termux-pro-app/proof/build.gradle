@@ -1,0 +1,37 @@
+plugins { id 'com.android.application' }
+def target = new groovy.json.JsonSlurper().parse(file('../../shared/target.json'))
+
+android {
+    namespace 'com.anthracitelabs.termuxpro'
+    compileSdk target.target_android_api
+    buildToolsVersion '36.0.0'
+    ndkVersion '28.2.13676358'
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    defaultConfig {
+        applicationId target.application_id
+        minSdk target.min_android_api
+        targetSdk target.target_android_api
+        versionCode 1
+        versionName '0.1-proof'
+        ndk { abiFilters 'arm64-v8a' }
+    }
+    sourceSets.main.jniLibs.srcDir layout.buildDirectory.dir('generated/jniLibs')
+    sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/proofAssets')
+    packaging.jniLibs {
+        useLegacyPackaging = true
+        keepDebugSymbols += ['**/libtp-*.so']
+    }
+}
+
+def nativeProof = tasks.register('compileNativeProof', Exec) {
+    inputs.files(fileTree('native'), fileTree('../../shared/native'), file('build-native.sh'))
+    outputs.dir(layout.buildDirectory.dir('generated/jniLibs'))
+    outputs.dir(layout.buildDirectory.dir('generated/proofAssets'))
+    commandLine 'bash', file('build-native.sh'),
+        new File(android.sdkDirectory, "ndk/${android.ndkVersion}"),
+        layout.buildDirectory.dir('generated/jniLibs').get().asFile
+}
+tasks.named('preBuild').configure { dependsOn nativeProof }

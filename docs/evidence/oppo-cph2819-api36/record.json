@@ -1,0 +1,129 @@
+{
+  "record_type": "user_supplied_on_device_execution_proof",
+  "evidence_label": "E0/E1 Android execution proof: one OPPO ARM64 device",
+  "source_provenance": {
+    "device_output": "pasted by user in this conversation; not directly exported from device by assistant",
+    "apk": "user-uploaded termux-pro-proof-apk.zip, contents verified against bundled SHA256SUMS",
+    "cryptographic_binding_of_log_to_apk": false,
+    "run_timestamp": "not present in supplied log",
+    "proof_apk_source_revision": "c54afeecf57b5863088ae9586f01c85a3f9232ee",
+    "apk_sha256": "7c9c136ffc7d974b54330aedfae200cb47a096cc6b8d1934cbc4b8aba8455bc3",
+    "apk_bytes": 24885,
+    "original_upload_zip_sha256": "749fab13a1f322b2c29e8bcb3a41ecdc1cf03a8cb72c4d5c71b73c87f42aaefd",
+    "raw_log_sha256": "8d6a660195e9957d6c3e43907d5704c764be31de81c750a063f48e5a4dcc36c0",
+    "source_commit_resolved": true,
+    "repository": "https://github.com/anthracite-labs/Termux-Pro-Max",
+    "source_commit_kind": "GitHub PR merge commit",
+    "source_commit_parents": [
+      "df162f0215dbb1b858864da022bec0051dd7d1d4",
+      "d70e8d3cf24af9baf2df97d1354294ca8c07e370"
+    ],
+    "proof_tree_matches_branch_commit": "d70e8d3cf24af9baf2df97d1354294ca8c07e370",
+    "original_upload_zip_independently_checked": false,
+    "original_upload_zip_note": "Original uploaded ZIP is not in this bundle; its hash is a supplied assertion.",
+    "input_bundle_sha256": "72980d9245e10b8866c7361f3d15e0c01c58c4319c46e0e7b737dd194f6bc4eb",
+    "all_bundle_manifest_checksums_verified": true,
+    "apk_signature_verification": "PASS: Android APK v2 signature (debug signing, no device-log binding)",
+    "native_sha256": {
+      "lib/arm64-v8a/libtp-driver.so": "c96974be0e358a1f07f9fa330887dc53c3ba5ad6136fd63d157f0f5833b904e4",
+      "lib/arm64-v8a/libtp-launcher.so": "c8d7cf7798dce19bfd460c262e0e95097bfed2f3f7a110c980bd42e69a787275"
+    },
+    "native_inspection": "PASS: executable ELF64 AArch64, nonzero entry, /system/bin/linker64; fixture native hashes match independent NDK build"
+  },
+  "device": {
+    "vendor": "OPPO",
+    "model": "CPH2819",
+    "android_version": 16,
+    "api_level": 36,
+    "target_sdk": 36,
+    "abi_primary": "arm64-v8a",
+    "device_supported_abis": [
+      "arm64-v8a",
+      "armeabi-v7a",
+      "armeabi"
+    ],
+    "page_size_bytes": 4096,
+    "application_id": "com.anthracitelabs.termuxpro",
+    "fingerprint_in_raw_log": true
+  },
+  "gate_results": {
+    "E0": {
+      "status": "PASS_DEVICE_SPECIFIC_FIXTURE",
+      "basis": "protected native executable case exited 0 with expected identity"
+    },
+    "E1": {
+      "status": "PASS_DEVICE_SPECIFIC_FIXTURE",
+      "basis": "managed symlink/path/execvp/spawnp/raw/relative cases exited as expected"
+    },
+    "E2": {
+      "status": "NOT_RUN"
+    },
+    "E3": {
+      "status": "NOT_RUN"
+    },
+    "full_android_matrix": {
+      "status": "NOT_RUN"
+    }
+  },
+  "case_results": [
+    {
+      "case": "protected",
+      "observed_exit": 0,
+      "expected_exit": 0,
+      "matches_expectation": true
+    },
+    {
+      "case": "execve",
+      "observed_exit": 0,
+      "expected_exit": 0,
+      "matches_expectation": true
+    },
+    {
+      "case": "execvp",
+      "observed_exit": 0,
+      "expected_exit": 0,
+      "matches_expectation": true
+    },
+    {
+      "case": "spawnp",
+      "observed_exit": 0,
+      "expected_exit": 0,
+      "matches_expectation": true
+    },
+    {
+      "case": "raw",
+      "observed_exit": 0,
+      "expected_exit": 0,
+      "matches_expectation": true
+    },
+    {
+      "case": "relative",
+      "observed_exit": 0,
+      "expected_exit": 0,
+      "matches_expectation": true
+    },
+    {
+      "case": "unregistered",
+      "observed_exit": 64,
+      "expected_exit": 64,
+      "matches_expectation": true
+    },
+    {
+      "case": "bad-arguments",
+      "observed_exit": 65,
+      "expected_exit": 65,
+      "matches_expectation": true
+    }
+  ],
+  "argv0_for_all_cases": "forged-git",
+  "remaining_limits": [
+    "Not evidence of production package launcher or a privileged isolation boundary",
+    "No Android linker64 target program demonstration (E2)",
+    "No real GH→Git→SSH child process integration (E3)",
+    "4 KB page-size only; no 16 KB device results",
+    "Single phone/API/ABI configuration; not full compatibility coverage",
+    "Log supplied as text, not independently signed or bound to the attached APK",
+    "APK source revision may not equal current PR HEAD; verify before attaching to a commit"
+  ],
+  "privacy": "Full raw log and original bundle retained with the user-provided attachment and local scratch copy; public log redacts fingerprint/install paths. Raw log SHA256 is retained above."
+}
