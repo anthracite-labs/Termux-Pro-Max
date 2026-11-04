@@ -142,3 +142,38 @@ Package data is mutable to programs under the same app UID. Signed archives prot
 - [ ] The validated mechanism covers `bash -> gh -> git -> ssh`; if not, architecture decision is reopened.
 
 **Verification record:** No acceptance test is claimed passed at document publication. See [VERIFICATION.md](VERIFICATION.md) and the dependency order in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+
+## 11. Candidate v1 carrier (T07 implementation)
+
+The concrete candidate carrier is ZIP (`.tpkg`), implemented in
+`shared/contract.py`; its identity inputs are `shared/target.json`. This chooses
+the archive format that the original builder specification intentionally left
+internal. No runtime resolver or package-manager DSL is introduced.
+
+A package contains exactly `manifest.json` plus `payload/<manifest file path>`
+for each inventory entry. Every payload entry is a regular file (no archive
+symlinks/hardlinks/special files or implicit directories), with mode 0644 or 0755.
+Native exported targets remain under `libexec/tp-real/`. Host builds resolve
+reviewed in-prefix library alias symlinks to regular copies; the Android installer
+alone generates managed command links after ownership validation. Development
+headers/static archives/pkg-config files are build sysroot inputs, not runtime
+payload. Runtime roots are lib, libexec, share and etc. Command kind `script`
+remains reserved and is rejected in this first native-only consumer.
+
+JSON duplicate keys, noncanonical/traversing paths, duplicate/undeclared entries,
+wrong identity/ABI/prefix/schema/API, wrong hashes/modes, unsupported ELF and
+missing declared/DT_NEEDED dependencies are rejected. Limits are 20,000 entries,
+512 MiB total uncompressed bytes and 256 MiB per file. ELF load segments must be
+16 KB aligned/congruent; host inspection does not prove loading on a 16 KB device.
+The source `build_id` is a commit plus `+dirty` when necessary; a separate
+`build_inputs_sha256` binds actual lock/recipe/patch/contract input bytes. Optional
+build/provenance fields may extend schema 1 without changing required semantics.
+
+`build.sh bootstrap` emits `bootstrap.zip`, with `index.json` and unchanged
+`packages/*.tpkg` archives. The index lists each archive's path/id/SHA-256 and the
+shared app/ABI/prefix/API identity. The external `bootstrap.sha256` covers the
+whole bootstrap archive. Each nested archive hash binds its manifest and payload;
+no archive or manifest claims to hash itself. A bundled APK signs the complete
+bootstrap and its expected digest through normal Android APK signing. Remote
+package signatures/delivery are not enabled by this choice. Play release and
+external imports remain gated.

@@ -1,0 +1,28 @@
+{
+  "id": "bash",
+  "dependencies": [
+    "ncurses",
+    "readline"
+  ],
+  "commands": [
+    "bash"
+  ],
+  "patches": [
+    {
+      "path": "patches/bash/0001-android-paths.patch",
+      "sha256": "a2ccac65839bdca21e1f37684aaa3ff0c163e6e8eb3ea231838d22cd7f6a41c9",
+      "upstream": "https://ftp.gnu.org/gnu/bash/bash-5.2.37.tar.gz",
+      "license": "GPL-3.0-or-later",
+      "reason": "Use the fixed Android package/system PATH and system bashrc; shell command lookup semantics remain upstream Bash.",
+      "test": "package-default-prefix"
+    },
+    {
+      "path": "patches/bash/0002-ncursesw.patch",
+      "sha256": "6d4dfda1163ebf968e4ae5e5c1d84ea92f595f06a33bd4db1b896c4252ca781d",
+      "upstream": "https://ftp.gnu.org/gnu/bash/bash-5.2.37.tar.gz",
+      "license": "GPL-3.0-or-later",
+      "reason": "Configure detects libncursesw but incorrectly maps that result to -lncurses. Preserve the detected wide-curses library in generated and source configure logic.",
+      "test": "bash DT_NEEDED dependency closure"
+    }
+  ]
+}

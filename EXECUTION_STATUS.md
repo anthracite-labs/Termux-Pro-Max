@@ -10,7 +10,7 @@ while runtime gates are addressed. No release or unrun device test is implied.
 |---|---|---|
 | E0 | PASS, device fixture only | User-supplied OPPO CPH2819 / Android 16 / API 36 / targetSdk 36 / ARM64 / 4096-byte pages |
 | E1 | PASS, device fixture only | Same sample; all eight expected exits, protected/PATH/spawn/raw/relative routes and forged argv0 |
-| E2 | NOT RUN on device | Implementation in progress; no separate target-loading result supplied |
+| E2 | NOT RUN on device | Seven-case candidate implemented; no Android target-loading result supplied |
 | E3 | NOT RUN | Requires real source-built GH → Git → SSH integration |
 | E4 | NOT RUN on device | Fixed build identity selected; package/runtime acceptance pending |
 | E5 | BLOCKED for Play release | Internal bundled APK only; policy/release review remains required |
@@ -35,10 +35,10 @@ No universal Android, 16 KB, PTY or real-package compatibility is claimed.
 | T04 E2 semantics | IMPLEMENTED, Android acceptance pending | Dynamic ELF fixture and Linux linker/PTY regression pass; obtain actual Android E2 log |
 | T05 child probe | PENDING | Separate fixture proof from actual E3 package-chain acceptance |
 | T06 execution ADR | CANDIDATE | E2/E3 evidence; ADR-004 is not final |
-| T07 package contract | IN PROGRESS | Shared schema/negative fixtures and both consumers |
-| T08 toolchain/backend | IN PROGRESS | Source-only dependency closure, pinned inputs, doctor/clean CI |
-| T09 source build | IN PROGRESS | Actually compile Bash/dependencies from verified upstream sources |
-| T10 package generation | PENDING | Inventory, ELF/ABI/dependency checks and load acceptance |
+| T07 package contract | PARTIAL | Python producer/verifier and negative fixtures implemented; Android consumer pending |
+| T08 toolchain/backend | PARTIAL | NDK/compiler/key/source pins and doctor implemented; immutable host image and clean CI acceptance pending |
+| T09 source build | IMPLEMENTED, local build passed | Bash/ncurses/readline built from pinned, signature-verified sources; clean CI pending |
+| T10 package generation | PARTIAL | Packages/bootstrap generated; inventory, ELF and dependency checks pass; Android loading pending |
 | T11 CI parity | PARTIAL | APK/host CI exists; source-builder parity/artifacts follow |
 | T12 terminal screen | PENDING | Rendering/input/accessibility runtime checks |
 | T13 PTY/session | PENDING | Job control, resize, signals and lifecycle device checks |
@@ -66,3 +66,28 @@ observation, not reclassified as passing Android tests.
 ## E2 candidate implementation
 
 The proof APK includes a separate dynamic ELF target asset, protected E2 launcher, and seven-case driver. Linux process/PTY regression and NDK ELF/APK build/lint checks pass; **Android E2 remains NOT RUN**. No E3 fixture or host test is promoted to the real source-built GH/Git/SSH gate.
+
+## Source-builder checkpoint — 4 November 2026
+
+The standalone builder now compiles ncurses 6.5, readline 8.2 and Bash 5.2.37
+from pinned official GNU source archives. All three detached signatures were
+checked against pinned signer fingerprints. Zero-fuzz patches set the internal
+Android prefix and correct Bash's wide-curses library selection. The shared
+validator rejects wrong identity/ABI/prefix, static or malformed executable ELF,
+unsafe archive paths, symlinks, undeclared payload and hash mismatches.
+
+Actual local result: all three packages and bootstrap report `PASS_STATIC`;
+Bash's declared dependency closure passes. The app/native host suite passed 14 tests, the shared/evidence suite passed six
+tests and the builder suite passed two. The E2 APK builds and Android lint passes.
+These results do not establish Android execution of the source-built packages.
+
+The local source build used a working tree; its older output manifests predate
+the new dirty-tree/input-digest provenance fix. Those local binaries are not
+published as clean-commit artifacts. Rebuild from the pushed revision before
+publishing candidate packages. Generated packages, caches and SDKs are ignored.
+
+Next work: source-offer bundle and Ubuntu builder CI/artifact publication; Android
+terminal/PTY and transactional bootstrap consumer; then real source-built
+Git/OpenSSH/GH and E3, Python/Node, importer hardening and compatibility matrix.
+The app terminal has not been implemented. Release remains blocked by the open
+runtime, host-image, signing, license/security and distribution gates.
