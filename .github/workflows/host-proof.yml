@@ -261,10 +261,10 @@ jobs:
       - name: Verify APK checksums
         working-directory: termux-pro-app/build/terminal-apk
         run: shasum -a 256 -c SHA256SUMS
-      - name: Launch APK on Android 16 emulator (translated ARM64)
+      - name: Launch APK on Android 11 emulator (translated ARM64)
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 36
+          api-level: 30
           target: google_apis
           arch: x86_64
           emulator-boot-timeout: 600
@@ -272,7 +272,7 @@ jobs:
           script: bash termux-pro-app/ci/run-emulator-startup.sh termux-pro-app/build/terminal-apk/termux-pro-debug.apk termux-pro-app/build/terminal-apk/termux-pro-test.apk
       - name: Record emulator-only test scope
         if: always()
-        run: echo 'Emulator launch smoke uses x86_64 Google APIs with ARM64 native translation; physical ARM64 E2/E3 and Bash/PTY acceptance remain separate.' >> "$GITHUB_STEP_SUMMARY"
+        run: echo 'Emulator launch smoke uses Android 11 x86_64 Google APIs with ARM64 native translation; physical ARM64 E2/E3 and Bash/PTY acceptance remain separate.' >> "$GITHUB_STEP_SUMMARY"
       - name: Preserve emulator failure evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
