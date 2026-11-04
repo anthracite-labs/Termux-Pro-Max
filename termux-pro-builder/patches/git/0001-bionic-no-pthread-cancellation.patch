@@ -1,0 +1,24 @@
+--- a/run-command.c
++++ b/run-command.c
+@@ -528,8 +528,10 @@
+ #else
+ 	CHECK_BUG(pthread_sigmask(SIG_SETMASK, &all, &as->old),
+ 		"blocking all signals");
++#ifndef __ANDROID__
+ 	CHECK_BUG(pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &as->cs),
+ 		"disabling cancellation");
++#endif
+ #endif
+ }
+ 
+@@ -539,8 +541,10 @@
+ 	if (sigprocmask(SIG_SETMASK, &as->old, NULL))
+ 		die_errno("sigprocmask");
+ #else
++#ifndef __ANDROID__
+ 	CHECK_BUG(pthread_setcancelstate(as->cs, NULL),
+ 		"re-enabling cancellation");
++#endif
+ 	CHECK_BUG(pthread_sigmask(SIG_SETMASK, &as->old, NULL),
+ 		"restoring signal mask");
+ #endif

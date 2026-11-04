@@ -4,5 +4,8 @@
     "ncurses"
   ],
   "commands": [],
-  "patches": []
+  "patches": [],
+  "required_files": [
+    "lib/libreadline.so.8"
+  ]
 }

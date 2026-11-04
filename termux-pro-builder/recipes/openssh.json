@@ -1,0 +1,42 @@
+{
+  "id": "openssh",
+  "backend": "core",
+  "dependencies": [
+    "zlib",
+    "openssl"
+  ],
+  "commands": [
+    "ssh",
+    "ssh-keygen",
+    "ssh-keyscan"
+  ],
+  "patches": [
+    {
+      "path": "patches/openssh/0001-android-client-home.patch",
+      "sha256": "9b3daaf34105611f2a5561841afef5ad9581a69862292c7457a52b5ceb4c443e",
+      "upstream": "https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-10.6p1.tar.gz",
+      "license": "SSH-OpenSSH",
+      "reason": "For the non-setuid Android client package, current-UID passwd/tilde home follows absolute HOME. Other users and elevated processes retain upstream handling.",
+      "test": "Android ssh -G identity/home and key generation NOT RUN"
+    },
+    {
+      "path": "patches/openssh/0002-bionic-bzero-wrapper.patch",
+      "sha256": "53cad9973e48c1b1c0ef1c5e93de1b7f5281708be0379dba68afb260ad15fad3",
+      "upstream": "https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-10.6p1.tar.gz",
+      "license": "ISC",
+      "reason": "Bionic bzero is a function-like macro. Give the existing upstream volatile-function-pointer erase barrier an addressable wrapper; do not remove the barrier.",
+      "test": "source compile and emitted volatile call inspection; Android erase/runtime acceptance pending"
+    },
+    {
+      "path": "patches/openssh/0003-bionic-public-resolver.patch",
+      "sha256": "c06742bd0127b25e038dd692df96650c386dc939f36537ed84c95aa3df422004",
+      "upstream": "https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-10.6p1.tar.gz",
+      "license": "BSD-2-Clause AND ISC",
+      "reason": "Use Bionic public res_init/res_query instead of unavailable private resolver state. Keep the upstream response parsing and host-key verification behavior.",
+      "test": "source compile; Android DNS/SSHFP acceptance NOT RUN"
+    }
+  ],
+  "integration_probes": [
+    "Android dynamic load and dependency resolution NOT RUN"
+  ]
+}

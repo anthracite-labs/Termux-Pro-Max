@@ -2,7 +2,7 @@ name: Execution proof
 
 on:
   pull_request:
-    branches: [main, feature/execution-proof]
+    branches: [main, 'feature/**']
   push:
     branches: [main]
 
@@ -115,7 +115,7 @@ jobs:
       - name: Install GNU host build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential patch gnupg ncurses-bin python3
+          sudo apt-get install -y --no-install-recommends build-essential patch gnupg ncurses-bin python3 perl
       - name: Install the fixed NDK
         uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
         with:
@@ -127,8 +127,13 @@ jobs:
           set -o pipefail
           mkdir -p termux-pro-builder/output
           ./termux-pro-builder/build.sh doctor > termux-pro-builder/output/doctor.log
-          ./termux-pro-builder/build.sh bootstrap 2>&1 | tee termux-pro-builder/output/build.log
+          ./termux-pro-builder/build.sh bootstrap bash openssh git 2>&1 | tee termux-pro-builder/output/build.log
           ./termux-pro-builder/build.sh test bash | tee termux-pro-builder/output/bash-static.json
+          ./termux-pro-builder/build.sh test openssh | tee termux-pro-builder/output/openssh-static.json
+          ./termux-pro-builder/build.sh test git | tee termux-pro-builder/output/git-static.json
+          mkdir -p termux-pro-app/build/consumer-check
+          javac -d termux-pro-app/build/consumer-check termux-pro-app/app/src/main/java/com/anthracitelabs/termuxpro/bootstrap/*.java termux-pro-app/tests/BootstrapHost.java
+          java -cp termux-pro-app/build/consumer-check com.anthracitelabs.termuxpro.bootstrap.BootstrapHost closure termux-pro-builder/output/packages shared/target.json | tee termux-pro-builder/output/java-consumer.log
           git rev-parse HEAD > termux-pro-builder/output/source-revision.txt
           test -z "$(git status --porcelain)"
       - name: Publish candidate bootstrap and corresponding source
@@ -182,7 +187,7 @@ jobs:
         with:
           name: termux-pro-source-bootstrap
           path: termux-pro-builder/output
-      - name: Build and lint terminal with bundled Bash
+      - name: Build and lint terminal with bundled Bash, OpenSSH and Git
         working-directory: termux-pro-app
         run: |
           set -o pipefail

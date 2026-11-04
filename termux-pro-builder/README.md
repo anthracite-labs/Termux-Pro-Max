@@ -24,6 +24,7 @@ the NDK itself. `shared/target.json` fixes app identity, ABI, API and prefix.
 ./build.sh test bash
 ./build.sh verify output/packages/bash-5.2.37.tpkg
 ./build.sh bootstrap
+./build.sh bootstrap bash openssh # combined candidate closure, compiled once
 ./build.sh source-offer # regenerate corresponding source without recompiling
 ```
 
@@ -52,6 +53,32 @@ not marked complete. Host tool versions are recorded, not silently declared pinn
 
 The `release` entry point fails explicitly while E2/E3, package/runtime, signing,
 license/security, host-image and distribution gates remain unresolved. No bypass
-flag or fabricated signing/provenance success is provided. Git/SSH/GH and later
-Python/Node recipes are subsequent implementation work, not supported names that
-silently download prebuilt tools.
+flag or fabricated signing/provenance success is provided. Candidate zlib/OpenSSL/OpenSSH recipes are now present; see the checkpoint below.
+Git/GH and Python/Node remain outstanding; unsupported names fail instead of
+silently downloading prebuilt tools.
+
+## Core-source checkpoint
+
+`build.sh build openssh` plans zlib 1.3.2 and OpenSSL 3.5.9 before OpenSSH 10.6p1.
+All three official source archives and detached signatures have been verified;
+key acquisition, fingerprints and the upstream zlib signature limitation are in
+vendor/README.md. zlib and OpenSSL now produce packages passing static checks.
+Recipes require their actual shared libraries, so a configure fallback cannot
+publish a package containing only documentation/licenses.
+
+The OpenSSH client binaries ssh/ssh-keygen/ssh-keyscan compile and link after
+narrow Bionic compatibility patches. Their ELF ABI/alignment/RUNPATH checks pass.
+**OpenSSH packaging now passes a clean CLI build:** source filenames are mapped
+during compilation and host-path checks stay enforced. The complete dependency
+closure and Java package-consumer static checks pass. This is not a passing
+Android SSH result. Client-only staging omits a daemon, privileged
+helpers and host keys. HOME and DNS adaptations still require real Android tests.
+
+Five builder unit tests pass, including required-runtime-output and signer/status
+negative cases. Machine signature status is now separate from human diagnostics;
+non-UTF-8 key display text cannot break decoding or satisfy the signer check.
+`source-offer openssh` selects that source closure without compiling it.
+
+Ubuntu CI now selects the combined Bash/OpenSSH closure and runs both Python and
+Java package consumers before bundling it into the terminal APK. Passing CI and
+actual Android execution remain distinct gates.

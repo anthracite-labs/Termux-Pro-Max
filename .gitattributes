@@ -1,2 +1,4 @@
-# Unified diff context lines retain their leading space.
-*.patch whitespace=-blank-at-eol
+# Unified diff context lines retain spaces before empty or tab-indented source.
+*.patch whitespace=-blank-at-eol,-space-before-tab
+# Preserve the checksum-pinned upstream MPL license verbatim.
+termux-pro-builder/vendor/licenses/MPL-2.0.txt whitespace=-blank-at-eol

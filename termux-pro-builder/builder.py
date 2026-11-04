@@ -2,6 +2,9 @@
 """Source-only Android package builds; no target package repository or plugin DSL."""
 import hashlib
 import json
+import gzip
+import lzma
+import tempfile
 import os
 from pathlib import Path
 import platform
@@ -55,7 +58,7 @@ def fetch(url, path, digest):
 
 def doctor(lock, target, output):
     contract.require(platform.system() == 'Linux' and platform.machine() == 'x86_64', 'build host must be Linux x86-64')
-    for tool in ['make', 'patch', 'gcc', 'gpg', 'tic']:
+    for tool in ['make', 'patch', 'gcc', 'gpg', 'tic', 'perl']:
         contract.require(shutil.which(tool), f'missing host tool: {tool}')
     sdk = os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT', '')
     ndk = Path(os.environ.get('TP_NDK_HOME', str(Path(sdk) / 'ndk' / lock['ndk_revision']))).resolve()
@@ -75,20 +78,44 @@ def doctor(lock, target, output):
     return binaries, record
 
 
+def verify_signature(name, archive, signature, source, output, log):
+    home = output / 'gpg-home'
+    home.mkdir(mode=0o700, parents=True, exist_ok=True)
+    keyring = BASE / source.get('keyring', 'vendor/gnu-signers.gpg')
+    if 'keyring_sha256' in source:
+        check_hash(keyring, source['keyring_sha256'])
+    command = ['gpg', '--no-options', '--homedir', str(home), '--batch', '--no-default-keyring',
+               '--keyring', str(keyring), '--status-fd', '1', '--verify', str(signature), str(archive)]
+    result = subprocess.run(command, text=True, encoding='utf-8', errors='replace',
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    log.write(result.stdout + result.stderr); log.flush()
+    statuses = result.stdout.splitlines()
+    contract.require(result.returncode == 0 and any(line.startswith('[GNUPG:] VALIDSIG ' + source['signer'] + ' ') for line in statuses), f'source signature verification failed: {name}')
+    contract.require(not any(any(f'[GNUPG:] {tag} ' in line for tag in ['EXPKEYSIG', 'REVKEYSIG', 'BADSIG', 'ERRSIG', 'EXPSIG']) for line in statuses), f'unacceptable source signature: {name}')
+
+
 def source_inputs(name, source, cache, output, log):
     archive = fetch(source['url'], cache / source['url'].rsplit('/', 1)[1], source['sha256'])
     if source.get('signature_url'):
         signature = fetch(source['signature_url'], cache / source['signature_url'].rsplit('/', 1)[1], source['signature_sha256'])
-        home = output / 'gpg-home'
-        home.mkdir(mode=0o700, exist_ok=True)
-        command = ['gpg', '--homedir', str(home), '--batch', '--no-default-keyring',
-                   '--keyring', str(BASE / 'vendor/gnu-signers.gpg'), '--status-fd', '1',
-                   '--verify', str(signature), str(archive)]
-        result = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        log.write(result.stdout); log.flush()
-        statuses = result.stdout.splitlines()
-        contract.require(result.returncode == 0 and any(line.startswith('[GNUPG:] VALIDSIG ' + source['signer'] + ' ') for line in statuses), f'source signature verification failed: {name}')
-        contract.require(not any(any(f'[GNUPG:] {tag} ' in line for tag in ['EXPKEYSIG', 'REVKEYSIG', 'BADSIG', 'ERRSIG', 'EXPSIG']) for line in statuses), f'unacceptable source signature: {name}')
+        format = source.get('signature_format', 'archive')
+        contract.require(format in {'archive', 'uncompressed-tar'}, 'unsupported source signature format')
+        if format == 'uncompressed-tar':
+            output.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(prefix='signature-', dir=output) as directory:
+                plain = Path(directory) / 'source.tar'
+                opener = {'.xz': lzma.open, '.gz': gzip.open}.get(archive.suffix)
+                contract.require(opener is not None, 'unsupported signed source compression')
+                with opener(archive, 'rb') as input, open(plain, 'wb') as dest:
+                    total = 0
+                    while chunk := input.read(1024 * 1024):
+                        total += len(chunk)
+                        contract.require(total <= 512 * 1024 * 1024, 'signed source decompression limit')
+                        dest.write(chunk)
+                check_hash(plain, source['uncompressed_sha256'])
+                verify_signature(name, plain, signature, source, output, log)
+        else:
+            verify_signature(name, archive, signature, source, output, log)
     return archive
 
 
@@ -138,6 +165,7 @@ def package(name, source, recipe, stage, target, output):
         contract.require((target['prefix'] + '/etc/profile').encode() in binary
                          and b'\0/etc/profile\0' not in binary, 'Bash compiled profile prefix mismatch')
     contract.require(payload, f'empty runtime package: {name}')
+    contract.require(set(recipe.get('required_files', [])) <= payload.keys(), f'missing required runtime files: {name}')
     revision, inputs_digest = build_identity()
     manifest = {'schema': 1, 'id': name, 'version': source['version'], 'revision': 1,
                 'abi': target['abi'], 'min_android_api': target['min_android_api'],
@@ -162,9 +190,43 @@ def package(name, source, recipe, stage, target, output):
     return path
 
 
+def verify_git_layout(manifest, payload, dependencies, target):
+    if manifest['id'] != 'git':
+        return {}
+    expected = {'git', 'git-remote-http', 'git-remote-https', 'git-upload-pack',
+                'git-receive-pack', 'git-upload-archive', 'git-shell'}
+    contract.require({c['name'] for c in manifest['commands']} == expected, 'Git command inventory mismatch')
+    prefix = target['prefix']
+    for name in expected:
+        path = 'libexec/tp-real/' + name
+        contract.require(path in payload, f'missing Git helper: {name}')
+        info = contract.inspect_elf(payload[path], executable=True)
+        contract.require(info['runpath'] == [prefix + '/lib'], f'Git helper RUNPATH mismatch: {name}')
+    binary = payload['libexec/tp-real/git']
+    contract.require((prefix + '/bin/bash').encode() + b'\0' in binary, 'Git runtime shell mismatch')
+    contract.require((prefix + '/bin').encode() + b'\0' in binary, 'Git managed exec-path mismatch')
+    contract.require('share/git-core/templates/info/exclude' in payload, 'Git templates missing')
+    packages = {m['id']: (m, data) for m, data in dependencies}
+    contract.require({'curl', 'openssl', 'zlib', 'ca-certificates', 'bash'} <= packages.keys(), 'Git dependency closure incomplete')
+    curl = packages['curl'][1].get('lib/libcurl.so')
+    contract.require(curl is not None and contract.inspect_elf(curl)['soname'] == 'libcurl.so', 'curl Android SONAME/output mismatch')
+    http = contract.inspect_elf(payload['libexec/tp-real/git-remote-http'], executable=True)
+    contract.require('libcurl.so' in http['needed'], 'Git HTTP helper does not use packaged libcurl.so')
+    ca = prefix + '/etc/tls/cert.pem'
+    contract.require(ca.encode() + b'\0' in curl, 'curl compiled CA bundle mismatch')
+    ca_manifest, ca_payload = packages['ca-certificates']
+    certificates = ca_payload.get('etc/tls/cert.pem')
+    contract.require(certificates is not None and hashlib.sha256(certificates).hexdigest() == ca_manifest['source']['sha256'], 'CA source/payload checksum mismatch')
+    return {'git_layout': 'PASS_STATIC', 'curl_soname': 'libcurl.so', 'https_ca_bundle': ca,
+            'managed_exec_path': prefix + '/bin', 'runtime_shell': prefix + '/bin/bash'}
+
+
 def build(name, sources, recipes, lock, target, cache, output):
     binaries, _ = doctor(lock, target, output)
-    order = plan(name, recipes)
+    requested = [name] if isinstance(name, str) else name
+    order = []
+    for item in requested:
+        order = plan(item, recipes, done=order)
     sysroot = output / 'sysroot'
     # Every requested dependency closure is compiled afresh, including development headers.
     if sysroot.exists():
@@ -180,11 +242,18 @@ def build(name, sources, recipes, lock, target, cache, output):
                 shutil.rmtree(work)
             src = work / 'source'
             src.mkdir(parents=True)
-            with tarfile.open(archive) as tar:
-                tar.extractall(src, filter='data')
-            roots = list(src.iterdir())
-            contract.require(len(roots) == 1 and roots[0].is_dir(), 'source archive requires one root directory')
-            src = roots[0]
+            if source.get('format', 'tar') == 'file':
+                shutil.copyfile(archive, src / archive.name)
+                license = recipe['license_file']
+                check_hash(BASE / license['path'], license['sha256'])
+                shutil.copyfile(BASE / license['path'], src / 'LICENSE')
+            else:
+                contract.require(source.get('format', 'tar') == 'tar', 'unsupported source carrier')
+                with tarfile.open(archive) as tar:
+                    tar.extractall(src, filter='data')
+                roots = list(src.iterdir())
+                contract.require(len(roots) == 1 and roots[0].is_dir(), 'source archive requires one root directory')
+                src = roots[0]
             for patch in recipe['patches']:
                 path = BASE / patch['path']
                 check_hash(path, patch['sha256'])
@@ -197,10 +266,14 @@ def build(name, sources, recipes, lock, target, cache, output):
                        TP_PREFIX=target['prefix'], TP_CC=str(binaries / 'aarch64-linux-android30-clang'),
                        TP_TOOL_BIN=str(binaries), TP_PACKAGE=package_name)
             print(f'BUILD {package_name} {source["version"]} from verified upstream source', flush=True)
-            subprocess.run(['bash', str(BASE / 'recipes/build-gnu.sh')], cwd=work, env=env,
+            scripts = {'gnu': 'build-gnu.sh', 'core': 'build-core.sh'}
+            script = scripts.get(recipe.get('backend', 'gnu'))
+            contract.require(script is not None, 'unsupported recipe backend')
+            subprocess.run(['bash', str(BASE / 'recipes' / script)], cwd=work, env=env,
                            stdout=log, stderr=subprocess.STDOUT, check=True)
             prefix = stage / target['prefix'].lstrip('/')
-            license_files = [p for p in src.iterdir() if p.is_file() and p.name in {'COPYING', 'COPYING.LESSER', 'COPYRIGHT', 'LICENSE', 'AUTHORS'}]
+            license_files = [p for p in src.iterdir() if p.is_file() and p.name in {'COPYING', 'COPYING.LESSER', 'COPYRIGHT', 'LICENSE', 'LICENSE.txt', 'LICENCE'}]
+            contract.require(license_files, f'missing source license text: {package_name}')
             license_dir = prefix / 'share/licenses' / package_name
             license_dir.mkdir(parents=True, exist_ok=True)
             for license_file in license_files:
@@ -210,6 +283,7 @@ def build(name, sources, recipes, lock, target, cache, output):
             dependencies = [contract.load_package(output / 'packages' / f'{dep}-{sources[dep]["version"]}.tpkg', target) for dep in plan(package_name, recipes)[:-1]]
             manifest, payload = contract.load_package(artifact, target)
             report = contract.verify_dependencies(manifest, payload, dependencies)
+            report.update(verify_git_layout(manifest, payload, dependencies, target))
             (logs / (package_name + '-verify.json')).write_text(json.dumps(report, indent=2) + '\n')
             shutil.rmtree(work)
             print(f'PACKAGE {artifact.name}: PASS_STATIC; Android runtime NOT RUN', flush=True)
@@ -297,18 +371,23 @@ def main(args):
         print(json.dumps(doctor(lock, target, output)[1], indent=2))
     elif command == 'build' and len(args) == 2:
         build(args[1], sources, recipes, lock, target, cache, output)
-    elif command == 'bootstrap' and len(args) == 1:
-        order = build('bash', sources, recipes, lock, target, cache, output)
+    elif command == 'bootstrap':
+        order = build(args[1:] or ['bash'], sources, recipes, lock, target, cache, output)
         bootstrap(order, sources, target, output)
         source_offer(order, sources, cache, output)
-    elif command == 'source-offer' and len(args) == 1:
-        print(source_offer(plan('bash', recipes), sources, cache, output))
+    elif command == 'source-offer':
+        order = []
+        for name in args[1:] or ['bash']:
+            order = plan(name, recipes, done=order)
+        print(source_offer(order, sources, cache, output))
     elif command in {'verify', 'test'} and len(args) == 2:
         path = Path(args[1]) if command == 'verify' else output / 'packages' / f'{args[1]}-{sources[args[1]]["version"]}.tpkg'
         manifest, payload = contract.load_package(path, target)
         order = plan(manifest['id'], recipes)[:-1]
         dependencies = [contract.load_package(output / 'packages' / f'{dep}-{sources[dep]["version"]}.tpkg', target) for dep in order]
-        print(json.dumps(contract.verify_dependencies(manifest, payload, dependencies), indent=2))
+        report = contract.verify_dependencies(manifest, payload, dependencies)
+        report.update(verify_git_layout(manifest, payload, dependencies, target))
+        print(json.dumps(report, indent=2))
     elif command == 'release':
         raise ValueError('release BLOCKED: E2/E3/device/package/host-image/license/distribution gates are not approved; candidate artifacts are not a release')
     else:

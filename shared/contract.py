@@ -87,7 +87,9 @@ def inspect_elf(data, executable=False):
     needed = [string(value) for tag, value in tags if tag == 1]
     require(all('/' not in name for name in needed), 'absolute DT_NEEDED path')
     runpath = [string(value) for tag, value in tags if tag in {15, 29}]
-    return {'needed': needed, 'runpath': runpath}
+    sonames = [string(value) for tag, value in tags if tag == 14]
+    require(len(sonames) <= 1, 'duplicate ELF SONAME')
+    return {'needed': needed, 'runpath': runpath, 'soname': sonames[0] if sonames else None}
 
 
 def validate_manifest(manifest, target):
