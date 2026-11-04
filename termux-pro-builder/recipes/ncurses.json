@@ -2,5 +2,8 @@
   "id": "ncurses",
   "dependencies": [],
   "commands": [],
-  "patches": []
+  "patches": [],
+  "required_files": [
+    "lib/libncursesw.so.6"
+  ]
 }

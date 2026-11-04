@@ -1,6 +1,9 @@
 import hashlib
 import importlib.util
 import json
+import io
+from unittest import mock
+import subprocess
 import zipfile
 from pathlib import Path
 import tempfile
@@ -52,6 +55,37 @@ class Builder(unittest.TestCase):
             (cache / 'fixture.tar.gz').write_bytes(b'changed')
             with self.assertRaisesRegex(ValueError, 'checksum'):
                 builder.source_offer(['fixture'], sources, cache, output)
+
+    def test_signature_identity_and_failed_statuses_cannot_be_overridden_by_diagnostics(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory); cache = folder / 'cache'; cache.mkdir()
+            archive = b'fixture source'; signature = b'fixture signature'
+            (cache / 'source.tar.gz').write_bytes(archive)
+            (cache / 'source.asc').write_bytes(signature)
+            source = {'url': 'https://example.org/source.tar.gz',
+                      'sha256': hashlib.sha256(archive).hexdigest(),
+                      'signature_url': 'https://example.org/source.asc',
+                      'signature_sha256': hashlib.sha256(signature).hexdigest(), 'signer': 'A' * 40}
+            expected = '[GNUPG:] VALIDSIG ' + source['signer'] + ' remaining fields\n'
+            with mock.patch.object(builder.subprocess, 'run') as run:
+                run.return_value = subprocess.CompletedProcess([], 0, expected, 'display-only diagnostics')
+                builder.source_inputs('fixture', source, cache, folder, io.StringIO())
+                for stdout, stderr, code in [(expected, '', 1),
+                                              (expected + '[GNUPG:] EXPKEYSIG bad key\n', '', 0),
+                                              ('[GNUPG:] VALIDSIG ' + 'B' * 40 + ' fields\n', expected, 0)]:
+                    run.return_value = subprocess.CompletedProcess([], code, stdout, stderr)
+                    with self.assertRaises(ValueError):
+                        builder.source_inputs('fixture', source, cache, folder, io.StringIO())
+
+    def test_configure_fallback_cannot_publish_a_license_only_library_package(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory); stage = folder / 'stage'
+            target = {'prefix': '/data/user/0/com.anthracitelabs.termuxpro/files/usr'}
+            license_file = stage / target['prefix'].lstrip('/') / 'share/licenses/fixture/LICENSE'
+            license_file.parent.mkdir(parents=True); license_file.write_text('license fixture')
+            recipe = {'commands': [], 'required_files': ['lib/libfixture.so']}
+            with self.assertRaisesRegex(ValueError, 'missing required runtime files'):
+                builder.package('fixture', {}, recipe, stage, target, folder)
 
 
 if __name__ == '__main__':

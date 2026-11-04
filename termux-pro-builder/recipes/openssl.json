@@ -1,0 +1,14 @@
+{
+  "id": "openssl",
+  "backend": "core",
+  "dependencies": [],
+  "commands": [],
+  "patches": [],
+  "integration_probes": [
+    "Android dynamic load and dependency resolution NOT RUN"
+  ],
+  "required_files": [
+    "lib/libcrypto.so",
+    "lib/libssl.so"
+  ]
+}

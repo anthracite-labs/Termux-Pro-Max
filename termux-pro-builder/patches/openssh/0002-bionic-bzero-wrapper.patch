@@ -1,0 +1,16 @@
+--- a/openbsd-compat/explicit_bzero.c
++++ b/openbsd-compat/explicit_bzero.c
+@@ -39,7 +39,13 @@
+  * Indirect bzero through a volatile pointer to hopefully avoid
+  * dead-store optimisation eliminating the call.
+  */
++#ifdef __ANDROID__
++/* Bionic's bzero is a function-like macro, not an addressable libc symbol. */
++static void android_bzero(void *buffer, size_t length) { bzero(buffer, length); }
++static void (* volatile ssh_bzero)(void *, size_t) = android_bzero;
++#else
+ static void (* volatile ssh_bzero)(void *, size_t) = bzero;
++#endif
+ 
+ void
+ explicit_bzero(void *p, size_t n)

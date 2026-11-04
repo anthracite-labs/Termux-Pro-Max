@@ -44,7 +44,7 @@ No universal Android, 16 KB, PTY or real-package compatibility is claimed.
 | T13 PTY/session | IMPLEMENTED, Android acceptance pending | Native PTY plus host resize/Ctrl+C/startup-error tests pass; Android job-control/lifecycle matrix pending |
 | T14 bootstrap/install | IMPLEMENTED, Android acceptance pending | Java contract consumer, staging, ownership, journal/rollback, launcher repair and host crash/HOME tests pass |
 | T15 app integration | TEST HARNESS READY, NOT RUN | APK bundles source-built Bash; physical-device instrumentation pending |
-| T16 Git/OpenSSH | PENDING | Source recipes, dependencies and real device integration |
+| T16 Git/OpenSSH | IN PROGRESS | zlib/OpenSSL packages pass static checks; OpenSSH clients compile, host-path packaging fix pending; Git and Android acceptance pending |
 | T17 GH/real E3 | PENDING | Source-build GH and record actual GH → Git → SSH execution |
 | T18 Python/Node | PENDING | Sources/dependencies, resources and subprocess device probes |
 | T19 importer hardening | PARTIAL | Shared negative archives, central-directory validation, tamper/crash/HOME tests pass on host; broader adversarial/device review pending |
@@ -130,3 +130,19 @@ Java consumer's static checks. Terminal assembleDebug/lintDebug PASS (no lint
 errors; warnings remain). Physical-device instrumentation is implemented and
 compiled separately; **not run**. Android E2, E3, app PTY/bootstrap/UI acceptance,
 rotation/background/accessibility, 16 KB and broader compatibility remain open.
+
+## Committed core-source checkpoint
+
+Ubuntu run [41757237782](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41757237782)
+passed all four jobs: host-proof, source-builder, android-apk and terminal-apk.
+The downloadable terminal/test APK artifact is
+[termux-pro-apk](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41757237782/artifacts/13289021173).
+This proves builds/static checks for `6a2d15b`, not device execution. The follow-up
+closed-session resize guard is `18259ac`; it adds a device-regression assertion.
+
+The next branch adds signature-verified zlib/OpenSSL/OpenSSH source inputs and
+candidate client recipes. zlib and OpenSSL package/static checks pass locally.
+OpenSSH clients compile/link with narrow Bionic HOME, sentinel, bzero and resolver
+adaptations, but their embedded host source filenames still need remapping before
+package verification can pass. Five builder unit tests pass. No Android SSH, Git,
+GH, E2 or E3 pass is claimed. Git/GH/Python/Node and release gates remain open.

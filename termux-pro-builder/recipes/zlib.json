@@ -1,0 +1,13 @@
+{
+  "id": "zlib",
+  "backend": "core",
+  "dependencies": [],
+  "commands": [],
+  "patches": [],
+  "integration_probes": [
+    "Android dynamic load and dependency resolution NOT RUN"
+  ],
+  "required_files": [
+    "lib/libz.so.1"
+  ]
+}
