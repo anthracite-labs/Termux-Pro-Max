@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -135,7 +136,12 @@ class Runtime(unittest.TestCase):
             while time.monotonic() < end:
                 foreground = os.tcgetpgrp(fd)
                 comm = Path(f'/proc/{foreground}/comm')
-                if foreground != pid and comm.exists() and comm.read_text().strip() == 'sleep': break
+                try:
+                    name = comm.read_text().strip()
+                except FileNotFoundError:
+                    # A transient foreground group (stty) can exit before this read.
+                    name = ''
+                if foreground != pid and name == 'sleep': break
                 time.sleep(0.01)
             else: self.fail('sleep never acquired the controlling PTY')
             os.write(fd, b'\x03')
@@ -153,6 +159,19 @@ class Runtime(unittest.TestCase):
             if pid > 0:
                 os.kill(pid, signal.SIGKILL); os.waitpid(pid, 0)
             os.close(fd)
+
+    def test_disappeared_foreground_process_is_retried_before_ctrl_c(self):
+        original = Path.read_text
+        disappeared = False
+        def read_comm(path, *args, **kwargs):
+            nonlocal disappeared
+            if str(path).startswith('/proc/') and not disappeared:
+                disappeared = True
+                raise FileNotFoundError('foreground process exited before proc read')
+            return original(path, *args, **kwargs)
+        with mock.patch.object(Path, 'read_text', read_comm):
+            self.test_real_controlling_pty_resize_ctrl_c_and_exit()
+        self.assertTrue(disappeared)
 
     def test_startup_errors_are_reported_and_reaped(self):
         fd, _ = self.launch('/does/not/exist', ['/does/not/exist'])

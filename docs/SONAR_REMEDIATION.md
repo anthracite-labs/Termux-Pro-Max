@@ -156,8 +156,8 @@ mkdir -p termux-pro-app/build/consumer-check
 git diff --check
 ```
 
-Results: 33 app/native/bootstrap/orchestration tests, 6 shared contract/evidence
-tests and 17 builder/source-integrity/GH tests PASS (56 total). The real pinned
+Results: 34 app/native/bootstrap/orchestration tests, 6 shared contract/evidence
+tests and 17 builder/source-integrity/GH tests PASS (57 total). The real pinned
 GH archive also passes `source_inputs` including exact SHA-256, revision/tree
 and GPG verification. Production Python static package checks and Java consumer
 PASS for the existing ten-package closure (GH records 160 source modules).
@@ -181,7 +181,26 @@ ERROR (new security rating 4/D), two OPEN Git SHA-1 issues. Both scopes have zer
 security hotspots. No main issue is to be manually closed merely because a
 change exists on an unmerged remediation branch. The new PR analysis/checks
 and delivery report must distinguish branch fixes from main's unchanged scan.
-Post-change analysis and issue dispositions will be recorded with delivery.
+The completed fresh PR #8 analysis of `d7c685855d5a65d662bea36e3c456df802d4c0ba`
+reports gate **OK**, security/reliability/maintainability ratings **1/A**, zero
+issues and zero security hotspots. Both original PR #6 SHA-1 issues were
+individually reviewed with the threat model and immutable review link, changed
+to `falsepositive`, and re-read as RESOLVED. PR #6's gate was recomputed as OK;
+that disposition is not a new code scan of PR #6. The eight original main
+issues remain OPEN until the fixes are merged and main is analyzed. No main
+finding was manually hidden or accepted. Final-head analysis and CI conclusions
+are recorded on [PR #8](https://github.com/anthracite-labs/Termux-Pro-Max/pull/8)
+and its [Sonar dashboard](https://sonarcloud.io/dashboard?id=anthracite-labs_Termux-Pro-Max&pullRequest=8).
+
+The first [CI run](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41815417933)
+failed in a pre-existing Linux PTY test: a transient foreground process exited
+between `/proc/<pid>/comm` existence and read calls. Dependent builds were
+SKIPPED in that run. A deterministic injected process-disappearance regression
+reproduced the failure. The test now retries a missing proc entry within its
+original five-second deadline, still requires an actual foreground `sleep`,
+then checks Ctrl+C status 130 and shell reaping. The full 34-test app suite
+passes, including this regression. Production PTY/Android code is unchanged;
+the final-head CI reruns all required jobs rather than treating skips as passes.
 
 Sonar dependency-risk analysis was attempted but Advanced Security is not
 enabled for this organization; dependency vulnerability coverage was **not
