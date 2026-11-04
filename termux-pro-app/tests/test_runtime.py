@@ -138,7 +138,7 @@ class Runtime(unittest.TestCase):
                 comm = Path(f'/proc/{foreground}/comm')
                 try:
                     name = comm.read_text().strip()
-                except FileNotFoundError:
+                except (FileNotFoundError, ProcessLookupError):
                     # A transient foreground group (stty) can exit before this read.
                     name = ''
                 if foreground != pid and name == 'sleep': break
@@ -162,16 +162,17 @@ class Runtime(unittest.TestCase):
 
     def test_disappeared_foreground_process_is_retried_before_ctrl_c(self):
         original = Path.read_text
-        disappeared = False
+        errors = [
+            FileNotFoundError(errno.ENOENT, 'foreground process disappeared'),
+            ProcessLookupError(errno.ESRCH, 'foreground process vanished'),
+        ]
         def read_comm(path, *args, **kwargs):
-            nonlocal disappeared
-            if str(path).startswith('/proc/') and not disappeared:
-                disappeared = True
-                raise FileNotFoundError('foreground process exited before proc read')
+            if str(path).startswith('/proc/') and errors:
+                raise errors.pop(0)
             return original(path, *args, **kwargs)
         with mock.patch.object(Path, 'read_text', read_comm):
             self.test_real_controlling_pty_resize_ctrl_c_and_exit()
-        self.assertTrue(disappeared)
+        self.assertEqual(errors, [])
 
     def test_startup_errors_are_reported_and_reaped(self):
         fd, _ = self.launch('/does/not/exist', ['/does/not/exist'])
