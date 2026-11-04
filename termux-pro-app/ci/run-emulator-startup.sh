@@ -30,9 +30,8 @@ adb shell ime list -s > "$evidence/input-methods.txt"
 adb shell settings get secure default_input_method > "$evidence/default-ime.txt"
 test -s "$evidence/input-methods.txt"
 adb logcat -c
-adb shell am force-stop com.anthracitelabs.termuxpro
-adb shell am start -W -n com.anthracitelabs.termuxpro/.TerminalActivity | tee "$evidence/launch.log"
-adb shell pidof com.anthracitelabs.termuxpro > "$evidence/pid.txt"
+# Instrumentation cold-starts the Activity itself. A preceding am start would
+# initialize/verify the large bundled bootstrap twice, overloading slow emulators.
 adb shell am instrument -w -r \
     -e class com.anthracitelabs.termuxpro.TerminalStartupSmoke \
     com.anthracitelabs.termuxpro.test/androidx.test.runner.AndroidJUnitRunner \
