@@ -1,13 +1,24 @@
-name: Execution proof
+name: Android APK CI
 
 on:
   pull_request:
     branches: [main, 'feature/**']
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_device:
+        description: 'Test on a connected ARM64 Android device (requires android-device runner)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+
+# Avoid multiple expensive emulator/source-build candidates racing on the same PR.
+concurrency:
+  group: android-apk-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   host-proof:
@@ -165,7 +176,7 @@ jobs:
       - name: Record actual gate scope
         if: always()
         run: |
-          echo 'Source build/static checks are candidates. Android E2/E3 and source-built package runtime acceptance: NOT RUN.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Source build and static checks only; Android runtime acceptance is separate.' >> "$GITHUB_STEP_SUMMARY"
 
   terminal-apk:
     needs: source-builder
@@ -203,13 +214,35 @@ jobs:
           cp app/build/generated/bootstrapAssets/build.json build/terminal-apk/
           cd build/terminal-apk
           sha256sum termux-pro-debug.apk termux-pro-test.apk > SHA256SUMS
+      - name: Verify packaged launcher, native libraries and bootstrap hash
+        working-directory: termux-pro-app
+        run: |
+          python3 - <<'PY'
+          from hashlib import sha256
+          from zipfile import ZipFile
+          with ZipFile('build/terminal-apk/termux-pro-debug.apk') as apk:
+              required = {
+                  'assets/bootstrap.zip', 'assets/bootstrap.sha256',
+                  'assets/target.json', 'assets/build.json',
+                  'lib/arm64-v8a/libtp-launcher.so', 'lib/arm64-v8a/libtp-pty.so',
+              }
+              missing = required.difference(apk.namelist())
+              if missing:
+                  raise SystemExit(f'Missing APK entries: {sorted(missing)}')
+              if sha256(apk.read('assets/bootstrap.zip')).hexdigest() != apk.read('assets/bootstrap.sha256').decode().strip():
+                  raise SystemExit('Bundled bootstrap SHA-256 mismatch')
+          PY
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging build/terminal-apk/termux-pro-debug.apk | grep -F "launchable-activity: name='com.anthracitelabs.termuxpro.TerminalActivity'"
       - name: Publish the terminal candidate APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: termux-pro-apk
+          name: termux-pro-apk-candidate
           path: termux-pro-app/build/terminal-apk/
           if-no-files-found: error
           retention-days: 14
+      - name: Record APK verification scope
+        if: always()
+        run: echo 'The APK is a build/static-verified candidate. Device launch and Bash acceptance are NOT RUN without the separate device-test job.' >> "$GITHUB_STEP_SUMMARY"
       - name: Preserve terminal build and lint evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -219,4 +252,66 @@ jobs:
             termux-pro-app/build/evidence/terminal/
             termux-pro-app/build/reports/dependency-verification/
             termux-pro-app/app/build/reports/lint-results-debug.*
+          retention-days: 14
+
+  emulator-smoke:
+    needs: terminal-apk
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: termux-pro-apk-candidate
+          path: termux-pro-app/build/terminal-apk
+      - name: Verify APK checksums
+        working-directory: termux-pro-app/build/terminal-apk
+        run: shasum -a 256 -c SHA256SUMS
+      - name: Launch APK on Android 11 emulator (translated ARM64)
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash termux-pro-app/ci/run-emulator-startup.sh termux-pro-app/build/terminal-apk/termux-pro-debug.apk termux-pro-app/build/terminal-apk/termux-pro-test.apk
+      - name: Record emulator-only test scope
+        if: always()
+        run: echo 'Emulator launch smoke uses Android 11 x86_64 Google APIs with ARM64 native translation; physical ARM64 E2/E3 and Bash/PTY acceptance remain separate.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve emulator failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: termux-pro-emulator-evidence
+          path: termux-pro-app/build/evidence/emulator/
+          retention-days: 14
+
+  device-test:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_device
+    needs: terminal-apk
+    runs-on: [self-hosted, Linux, android-device]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: termux-pro-apk-candidate
+          path: termux-pro-app/build/terminal-apk
+      - name: Verify candidate SHA-256 checksums
+        working-directory: termux-pro-app/build/terminal-apk
+        run: sha256sum -c SHA256SUMS
+      - name: Test startup and bundled Bash on connected ARM64 device
+        working-directory: termux-pro-app
+        run: bash ci/run-terminal-acceptance.sh build/terminal-apk/termux-pro-debug.apk build/terminal-apk/termux-pro-test.apk
+      - name: Preserve Android device evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: termux-pro-device-evidence
+          path: termux-pro-app/build/evidence/terminal-device/
           retention-days: 14
