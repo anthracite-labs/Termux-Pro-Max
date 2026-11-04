@@ -65,7 +65,11 @@ public final class TerminalActivity extends Activity {
     void showStatus(String message, boolean failed) { status.setText(message); repair.setVisibility(failed ? View.VISIBLE : View.GONE); }
     void keyboard() {
         terminal.requestFocus();
-        ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showSoftInput(terminal, 0);
+        // Match upstream Termux's delayed IME request after focus/window attachment.
+        terminal.postDelayed(() -> {
+            if (terminal.isAttachedToWindow() && terminal.hasWindowFocus() && terminal.hasFocus())
+                ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showSoftInput(terminal, 0);
+        }, 300);
     }
     @Override protected void onDestroy() {
         if (app.activity.get() == this) app.activity.clear();
