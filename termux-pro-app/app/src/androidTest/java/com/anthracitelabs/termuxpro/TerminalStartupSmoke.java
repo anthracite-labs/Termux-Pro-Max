@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import android.content.Intent;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.WindowInsets;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
@@ -66,15 +67,21 @@ public final class TerminalStartupSmoke {
         }
         assertTrue("Keyboard request did not show the Android IME", visible.get());
 
+        Log.i("TermuxProSmoke", "IME_VISIBLE; waiting for verified bundled Bash startup");
         AtomicBoolean bashReady = new AtomicBoolean();
-        deadline = SystemClock.elapsedRealtime() + 60000;
+        // ARM64 translated through a heavily loaded x86_64 emulator can take much
+        // longer than a physical phone to validate/extract the ten-package ZIP.
+        // Run 41831407333 timed out at 60s while BootstrapSetup was still in
+        // BootstrapInstaller/SafeZip; keep this bound and all end-to-end asserts.
+        deadline = SystemClock.elapsedRealtime() + 240000;
         while (SystemClock.elapsedRealtime() < deadline) {
             instrumentation.runOnMainSync(() -> bashReady.set(app.session != null &&
                 app.session.getPid() > 0 && app.session.getEmulator() != null));
             if (bashReady.get()) break;
             Thread.sleep(100);
         }
-        assertTrue("Bundled Bash did not start", bashReady.get());
+        assertTrue("Bundled Bash did not start after a bounded 240s (preparing=" + app.preparing + ")", bashReady.get());
+        Log.i("TermuxProSmoke", "BASH_READY; checking actual IME-to-command roundtrip");
         Path directory = app.getFilesDir().toPath().resolve("acceptance");
         Files.createDirectories(directory);
         Path marker = directory.resolve("ime-roundtrip.txt");
