@@ -2,7 +2,7 @@
 
 **Edition:** documentation baseline v0.1  
 **Prepared:** 3 November 2026  
-**Status:** implementation in progress; E0/E1 passed one user-supplied OPPO device fixture; E2/E3 remain pending
+**Status:** PRs #1–#3 merged to `main` (4 November 2026); source builder and bundled terminal candidates implemented; OPPO E0/E1 fixture-specific PASS; Android E2/E3/terminal acceptance and release pending.
 **Input:** `Termux_Pro_Architecture_Report.md` supplied by the project owner  
 **Scope:** documentation for a standalone package builder and a new Android terminal application; not a fork of existing Termux.
 
@@ -10,6 +10,13 @@ Implementation progress is tracked in [EXECUTION_STATUS.md](EXECUTION_STATUS.md)
 The first runnable experiment is the [Android E0/E1 execution harness](termux-pro-app/README.md);
 the [standalone source builder](termux-pro-builder/README.md) now builds a candidate Bash/ncurses/readline bootstrap locally. A bundled-Bash Android terminal candidate is implemented; physical-device acceptance remains outstanding. The publication-time statements
 below describe the original documentation baseline.
+
+## Current repository implementation
+
+The original seven-file blueprint is the requirements baseline. The merged repository also contains `termux-pro-builder/`, `termux-pro-app/` and `shared/`: a pinned source-build system capable of producing nine candidate packages through Git, a bundled-source terminal APK and instrumentation test APK, and automated host/build/static checks. [Exact-head CI evidence](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41769436863) applies to PR #3, not automatically to future commits or Android execution. Do not confuse an APK artifact with device acceptance.
+
+**Next gates:** Android E2, source-built Bash/PTY/bootstrap/Git/SSH runtime tests; source-built GH and real GH → Git → SSH E3; Python/Node; security, page-size/device matrix, distribution and release decisions. Current statuses and merge SHAs are in [EXECUTION_STATUS.md](EXECUTION_STATUS.md). See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the corrected execution order.
+
 
 ## Read this first
 
