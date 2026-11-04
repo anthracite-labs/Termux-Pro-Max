@@ -99,7 +99,14 @@ of the test APK as a passing device run.
 
 GitHub Actions publishes `termux-pro-apk-candidate` (app plus instrumentation APK,
 checksums, source revision and bootstrap digest), separately from `termux-pro-proof-apk`.
-APK build/lint and archive checks do **not** prove it starts on Android. The
+APK build/lint and archive checks do **not** prove it starts on Android.
+An automatic `emulator-smoke` job uses `macos-26-intel`, an Android 16 (API 36)
+Google APIs x86_64 image and its advertised ARM64 native translation support.
+It installs the actual candidate APK, launches `TerminalActivity`, runs
+`TerminalStartupSmoke`, and saves logcat/Activity evidence on failure. An
+unsupported ARM64 native bridge fails the job rather than being counted as a pass.
+This is a launch smoke test, **not** native ARM64 E2/E3 or Bash/PTY acceptance.
+The
 `Android APK CI` workflow can run `device-test` with a manual
 `workflow_dispatch` and `run_device=true` on a self-hosted Linux runner labeled
 `android-device`, with ADB authorized to a connected ARM64 Android device.
