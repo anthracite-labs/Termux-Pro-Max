@@ -67,7 +67,7 @@ public final class TerminalStartupSmoke {
         Files.createDirectories(directory);
         Path marker = directory.resolve("ime-roundtrip.txt");
         Files.deleteIfExists(marker);
-        String command = "printf 'IME_OK\\n' > '" + marker + "'\\n";
+        String command = "printf 'IME_OK\\n' > '" + marker + "'\n";
         instrumentation.runOnMainSync(() -> {
             InputConnection input = activity.terminal.onCreateInputConnection(new EditorInfo());
             assertNotNull("Terminal has no IME input connection", input);
@@ -76,6 +76,6 @@ public final class TerminalStartupSmoke {
         deadline = SystemClock.elapsedRealtime() + 10000;
         while (SystemClock.elapsedRealtime() < deadline && !Files.isRegularFile(marker)) Thread.sleep(100);
         assertTrue("IME text never reached bundled Bash", Files.isRegularFile(marker));
-        assertEquals("IME_OK\\n", new String(Files.readAllBytes(marker), StandardCharsets.UTF_8));
+        assertEquals("IME_OK\n", new String(Files.readAllBytes(marker), StandardCharsets.UTF_8));
     }
 }
