@@ -24,3 +24,10 @@ class TerminalStartup(unittest.TestCase):
         source = SOURCE.read_text()
         keyboard = source[source.index('void keyboard()'):source.index('@Override protected void onDestroy()')]
         self.assertIn('showSoftInput(terminal, 0)', keyboard)
+
+    def test_keyboard_waits_for_attached_focused_window(self):
+        source = SOURCE.read_text()
+        keyboard = source[source.index('void keyboard()'):source.index('@Override protected void onDestroy()')]
+        self.assertIn('terminal.postDelayed(', keyboard)
+        self.assertIn('terminal.isAttachedToWindow()', keyboard)
+        self.assertIn('terminal.hasWindowFocus()', keyboard)
