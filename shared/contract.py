@@ -26,7 +26,9 @@ def read_json(data):
             require(key not in result, f'duplicate JSON key: {key}')
             result[key] = value
         return result
-    return json.loads(data, object_pairs_hook=unique)
+    def invalid_constant(value):
+        raise ValueError('invalid JSON constant: ' + value)
+    return json.loads(data, object_pairs_hook=unique, parse_constant=invalid_constant)
 
 
 def payload_path(value):
@@ -35,7 +37,7 @@ def payload_path(value):
     path = PurePosixPath(value)
     require(not path.is_absolute() and path.as_posix() == value, 'noncanonical path')
     require(all(p not in {'', '.', '..'} for p in value.split('/')), 'path traversal')
-    require(path.parts[0] in {'lib', 'libexec', 'share', 'etc'}, 'unmanaged payload root')
+    require(len(path.parts) >= 2 and path.parts[0] in {'lib', 'libexec', 'share', 'etc'}, 'unmanaged payload root')
     return value
 
 
@@ -128,13 +130,14 @@ def validate_manifest(manifest, target):
 
 def load_package(path, target):
     with zipfile.ZipFile(path) as archive:
+        require(not archive.comment, 'ZIP comments unsupported')
         infos = archive.infolist()
         names = [i.filename for i in infos]
         require(len(infos) <= MAX_FILES and len(names) == len(set(names)), 'duplicate/excessive ZIP entries')
         require(sum(i.file_size for i in infos) <= MAX_BYTES and all(i.file_size <= MAX_BYTES // 2 for i in infos), 'oversized package')
         for info in infos:
             mode = info.external_attr >> 16
-            require(not info.flag_bits & 1 and not info.is_dir(), 'encrypted/directory ZIP entry')
+            require(not info.flag_bits & ~0x800 and not info.is_dir(), 'encrypted/directory ZIP entry')
             require(stat.S_IFMT(mode) in {0, stat.S_IFREG}, 'special/symlink ZIP entry')
             require(info.compress_type in {zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED}, 'unsupported ZIP compression')
         require('manifest.json' in names, 'missing manifest')
@@ -162,9 +165,9 @@ def load_package(path, target):
 def verify_dependencies(manifest, payload, dependency_packages):
     dependencies = {m['id']: (m, data) for m, data in dependency_packages}
     require(set(manifest['dependencies']) <= dependencies.keys(), 'missing declared dependency')
-    libraries = PLATFORM_LIBRARIES | {PurePosixPath(path).name for path in payload if path.startswith('lib/')}
+    libraries = PLATFORM_LIBRARIES | {PurePosixPath(path).name for path, data in payload.items() if path.startswith('lib/') and path.count('/') == 1 and data.startswith(b'\x7fELF')}
     for _, data in dependencies.values():
-        libraries.update(PurePosixPath(path).name for path in data if path.startswith('lib/'))
+        libraries.update(PurePosixPath(path).name for path, content in data.items() if path.startswith('lib/') and path.count('/') == 1 and content.startswith(b'\x7fELF'))
     for path, data in payload.items():
         if data.startswith(b'\x7fELF'):
             needed = set(inspect_elf(data)['needed'])

@@ -49,11 +49,13 @@ class Contract(unittest.TestCase):
                     contract.inspect_elf(variant, executable=True)
 
     def test_paths_and_duplicate_json_are_rejected(self):
-        for path in ['../home/x', '/etc/passwd', 'lib/../bin/x', 'lib//x', 'lib/./x', 'lib\\x', 'bin/gh']:
+        for path in ['../home/x', '/etc/passwd', 'lib/../bin/x', 'lib//x', 'lib/./x', 'lib\\x', 'bin/gh', 'lib']:
             with self.subTest(path=path), self.assertRaises(ValueError):
                 contract.payload_path(path)
         with self.assertRaises(ValueError):
             contract.read_json('{"schema":1,"schema":2}')
+        with self.assertRaises(ValueError):
+            contract.read_json('{"x":NaN}')
 
     def manifest(self):
         return {'schema': 1, 'id': 'fixture', 'version': '1.0', 'revision': 1,

@@ -1,6 +1,6 @@
 # Termux Pro — Package and Runtime Contract
 
-**Status:** proposed normative interface between `termux-pro-builder` and the Android app. **Not implemented or device verified.**  
+**Status:** candidate normative interface implemented by the builder and Java Android consumer; host conformance passes. **Android package loading remains unverified.**
 **Source:** requirements derived from the attached Termux Pro Architecture Report; Android/Termux-specific changes are research-backed proposals as recorded in [ARCHITECTURE.md](ARCHITECTURE.md).  
 **Reference registry:** [README.md](README.md#evidence-register).
 
@@ -152,7 +152,10 @@ internal. No runtime resolver or package-manager DSL is introduced.
 
 A package contains exactly `manifest.json` plus `payload/<manifest file path>`
 for each inventory entry. Every payload entry is a regular file (no archive
-symlinks/hardlinks/special files or implicit directories), with mode 0644 or 0755.
+symlinks/hardlinks/special files or implicit directories), with mode 0644 or 0755. The seekable ZIP carrier
+uses matching local/central headers, no comments, data descriptors, split archives
+or ZIP64; flags are zero or UTF-8 only. The Android consumer verifies local header
+names/sizes/CRC, contiguous non-overlapping entries, and bounded decompression.
 Native exported targets remain under `libexec/tp-real/`. Host builds resolve
 reviewed in-prefix library alias symlinks to regular copies; the Android installer
 alone generates managed command links after ownership validation. Development

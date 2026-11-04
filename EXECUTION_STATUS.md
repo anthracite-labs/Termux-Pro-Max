@@ -37,17 +37,17 @@ No universal Android, 16 KB, PTY or real-package compatibility is claimed.
 | T06 execution ADR | CANDIDATE | E2/E3 evidence; ADR-004 is not final |
 | T07 package contract | PARTIAL | Python producer/verifier and negative fixtures implemented; Android consumer pending |
 | T08 toolchain/backend | PARTIAL | NDK/compiler/key/source pins and doctor implemented; immutable host image and clean CI acceptance pending |
-| T09 source build | IMPLEMENTED, local build passed | Bash/ncurses/readline built from pinned, signature-verified sources; clean CI pending |
+| T09 source build | IMPLEMENTED, local and Ubuntu CI passed | Bash/ncurses/readline built from pinned, signature-verified sources; runtime acceptance pending |
 | T10 package generation | PARTIAL | Packages/bootstrap generated; inventory, ELF and dependency checks pass; Android loading pending |
-| T11 CI parity | PARTIAL | APK/host CI exists; source-builder parity/artifacts follow |
-| T12 terminal screen | PENDING | Rendering/input/accessibility runtime checks |
-| T13 PTY/session | PENDING | Job control, resize, signals and lifecycle device checks |
-| T14 bootstrap/install | PENDING | Verified staged extraction, ownership, rollback and preservation tests |
-| T15 app integration | PENDING | Actual bundled Bash/PTTY acceptance |
+| T11 CI parity | PARTIAL | Source-builder and proof APK Ubuntu CI passed; terminal APK CI configured; release host-image pin still pending |
+| T12 terminal screen | IMPLEMENTED, acceptance pending | Pinned Apache terminal renderer, keyboard controls and Unicode/ANSI test APK; real UI/accessibility review pending |
+| T13 PTY/session | IMPLEMENTED, Android acceptance pending | Native PTY plus host resize/Ctrl+C/startup-error tests pass; Android job-control/lifecycle matrix pending |
+| T14 bootstrap/install | IMPLEMENTED, Android acceptance pending | Java contract consumer, staging, ownership, journal/rollback, launcher repair and host crash/HOME tests pass |
+| T15 app integration | TEST HARNESS READY, NOT RUN | APK bundles source-built Bash; physical-device instrumentation pending |
 | T16 Git/OpenSSH | PENDING | Source recipes, dependencies and real device integration |
 | T17 GH/real E3 | PENDING | Source-build GH and record actual GH → Git → SSH execution |
 | T18 Python/Node | PENDING | Sources/dependencies, resources and subprocess device probes |
-| T19 importer hardening | PENDING | Adversarial archives, tampering and interrupted-update tests |
+| T19 importer hardening | PARTIAL | Shared negative archives, central-directory validation, tamper/crash/HOME tests pass on host; broader adversarial/device review pending |
 | T20 compatibility/channel | PENDING | API 30/current API, 16 KB and additional OEM coverage; policy review |
 | T21 readiness | NOT READY | Required runtime/security/license/distribution gates remain open |
 
@@ -89,7 +89,7 @@ publishing candidate packages. Generated packages, caches and SDKs are ignored.
 Next work: source-offer bundle and Ubuntu builder CI/artifact publication; Android
 terminal/PTY and transactional bootstrap consumer; then real source-built
 Git/OpenSSH/GH and E3, Python/Node, importer hardening and compatibility matrix.
-The app terminal has not been implemented. Release remains blocked by the open
+The terminal candidate is now implemented; see continuation below. Release remains blocked by the open
 runtime, host-image, signing, license/security and distribution gates.
 
 ### Builder automation continuation
@@ -99,3 +99,34 @@ packages/bootstrap plus corresponding verified upstream sources and build inputs
 The source-offer regression checks every recorded member hash and rejects a
 tampered cached source. Three builder unit tests pass locally. CI execution is
 pending observation; it does not replace Android acceptance.
+
+## Terminal/bootstrap continuation
+
+Source builder, host regression and proof APK jobs passed in Ubuntu run
+[41749639363](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41749639363)
+for branch commit `1618f9a3558dcdc8c583f65338cc8dfcf1cdcdf2` (PR merge checkout).
+Published artifacts include `termux-pro-source-bootstrap`, corresponding source,
+source-build logs, and the proof APK. This is actual build/static evidence only.
+
+The new `:app` candidate bundles that bootstrap, validates the shared package
+contract in Java, rejects unsafe ZIP/ELF/identity/hash inputs, and stages a complete
+prefix with ownership records. Atomic renames plus a durable journal recover the
+previous prefix after interruption before commit. HOME is outside the transaction.
+Unchanged installs verify payloads and repair managed links after APK relocation;
+modified/corrupt payloads require the explicit Repair action. This is not package
+isolation within the app UID, an external package downloader, or a release.
+
+The terminal uses only pinned Apache-licensed Termux rendering libraries, with
+provenance/notices and a separate native PTY implementation. Public descriptor
+ownership replaces upstream hidden-field reflection; process startup failures are
+reported/reaped and PID-zero signaling is guarded. The protected launcher uses
+AT_EXECFN and registered managed entries, then the Android system linker. It
+ignores forged argv0 for identity and strips unsupported loader injection variables.
+Bash remains an upstream source-built package with narrow path/configure patches.
+
+Actual local results: 23 app/native host tests PASS, six shared/evidence tests PASS,
+three builder tests PASS; source-built package closure also passes the Android
+Java consumer's static checks. Terminal assembleDebug/lintDebug PASS (no lint
+errors; warnings remain). Physical-device instrumentation is implemented and
+compiled separately; **not run**. Android E2, E3, app PTY/bootstrap/UI acceptance,
+rotation/background/accessibility, 16 KB and broader compatibility remain open.

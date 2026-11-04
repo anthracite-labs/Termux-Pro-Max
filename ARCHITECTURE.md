@@ -166,3 +166,27 @@ All `[S#]` definitions and URLs are in [README.md](README.md#evidence-register).
 Use `shared/target.json` as the single immutable build identity: `com.anthracitelabs.termuxpro`, arm64-v8a, minimum API 30, target API 36, primary Android user 0 and `/data/user/0/com.anthracitelabs.termuxpro/files/usr`. The device evidence observes this files-root model. Runtime checks must reject another canonical prefix; secondary profiles are not claimed. The initial channel is an internal APK with bundled payloads; external native downloads and Play release remain disabled.
 
 Following the owner's implementation instruction, builder, contract and terminal code may proceed as **candidate implementations** while E2/E3 device tests are pending. This relaxes implementation ordering, not acceptance: no unrun test becomes PASS, ADR-004 is not final, and release remains blocked on VERIFICATION.md.
+
+## ADR-010 — Initial source-builder and terminal implementation (candidate)
+
+The Bash dependency closure uses ordinary pinned GNU configure/make recipes,
+not a full imported package-builder engine. Reviewed Termux porting conventions
+are attributed to a pinned reference; no prebuilt Termux target dependencies are
+consumed. Official source SHA-256 and detached-signature fingerprints are checked,
+patches apply with zero fuzz, and the same CLI runs locally and on Ubuntu Actions.
+An immutable host-image digest, security review and release readiness remain open.
+
+Only the Apache terminal-emulator/terminal-view libraries are reused at pinned
+Termux source commit `5b657c6adf4304e5198951ce815fe0205dcac29c`; app/shared GPL
+code and upstream native PTY code are not imported. Our own small native bridge
+creates a controlling PTY, resets child signal state, closes inherited descriptors,
+and reports exec failures. Public ParcelFileDescriptor ownership replaces upstream
+hidden-field reflection. This avoids implementing a new VT/Unicode renderer while
+keeping process startup, package trust and application lifecycle under this app.
+
+The candidate importer has two independent contract consumers (Python/Java) using
+the same valid/invalid native package fixtures. APK signing binds the bundled
+bootstrap digest; remote native delivery is disabled. Whole-prefix staging and
+journal recovery preserve HOME, which is a sibling directory. These host/static
+results permit continued candidate implementation; they do not accept ADR-004,
+claim per-package isolation, or close Android E2/E3/runtime/compatibility gates.

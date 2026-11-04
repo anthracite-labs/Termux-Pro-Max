@@ -8,7 +8,7 @@
 
 Implementation progress is tracked in [EXECUTION_STATUS.md](EXECUTION_STATUS.md).
 The first runnable experiment is the [Android E0/E1 execution harness](termux-pro-app/README.md);
-the [standalone source builder](termux-pro-builder/README.md) now builds a candidate Bash/ncurses/readline bootstrap locally. The Android terminal remains outstanding. The publication-time statements
+the [standalone source builder](termux-pro-builder/README.md) now builds a candidate Bash/ncurses/readline bootstrap locally. A bundled-Bash Android terminal candidate is implemented; physical-device acceptance remains outstanding. The publication-time statements
 below describe the original documentation baseline.
 
 ## Read this first
