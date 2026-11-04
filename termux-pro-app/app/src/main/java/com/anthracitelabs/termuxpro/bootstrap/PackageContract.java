@@ -48,6 +48,15 @@ public final class PackageContract {
     public static String digest(Object value) {
         String text = string(value); check(text.matches("[0-9a-f]{64}"), "invalid SHA-256"); return text;
     }
+    private static boolean contains(byte[] data, byte[] pattern) {
+        for (int i = 0; i <= data.length - pattern.length; i++) {
+            if (data[i] != pattern[0]) continue;
+            int j = 1;
+            while (j < pattern.length && data[i + j] == pattern[j]) j++;
+            if (j == pattern.length) return true;
+        }
+        return false;
+    }
     public static String payloadPath(Object value) {
         String name = SafeZip.path(string(value));
         check(name.startsWith("lib/") || name.startsWith("libexec/") || name.startsWith("share/") || name.startsWith("etc/"), "unmanaged payload root");
@@ -107,9 +116,10 @@ public final class PackageContract {
                 check(hash(data).equals(file.getValue().get("sha256")), "payload checksum mismatch: " + name);
                 int mode = zip.entries.get(entryName).mode;
                 check(mode == 0 || mode == Integer.parseInt(string(file.getValue().get("mode")), 8), "payload mode mismatch");
-                String binary = new String(data, StandardCharsets.ISO_8859_1);
+                // A full ISO-8859-1 String duplicates multi-megabyte binaries and can
+                // exhaust Android's 192 MiB heap. Compare ASCII byte sequences directly.
                 for (String bad : new String[]{"/data/data/com.termux/", "/data/user/0/com.termux/", "/workspace/"})
-                    check(!binary.contains(bad), "foreign/host path in " + name);
+                    check(!contains(data, bad.getBytes(StandardCharsets.US_ASCII)), "foreign/host path in " + name);
                 boolean command = result.commands.containsValue(name);
                 if (command || (data.length >= 4 && data[0] == 127 && data[1] == 'E' && data[2] == 'L' && data[3] == 'F'))
                     result.needed.addAll(elf(data, command, string(target.get("prefix"))));
