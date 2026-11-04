@@ -1,7 +1,6 @@
 package com.anthracitelabs.termuxpro.bootstrap;
 
 import static com.anthracitelabs.termuxpro.bootstrap.StrictJson.check;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
@@ -99,17 +98,23 @@ public final class SafeZip implements AutoCloseable {
         check(expected != null && expected.size <= limit, "missing/oversized ZIP member: " + name);
         ZipEntry entry = zip.getEntry(name);
         check(entry != null && entry.getSize() == expected.size, "ZIP member mismatch");
-        ByteArrayOutputStream output = new ByteArrayOutputStream((int) Math.min(expected.size, 65536));
+        // ZIP central-directory sizes are verified above. Allocate once: growing a
+        // ByteArrayOutputStream then copying it doubles peak heap on large GH files.
+        check(expected.size <= Integer.MAX_VALUE, "oversized ZIP member");
+        byte[] output = new byte[(int) expected.size];
         CRC32 crc = new CRC32();
         try (InputStream input = zip.getInputStream(entry)) {
-            byte[] buffer = new byte[16384]; int n; long total = 0;
-            while ((n = input.read(buffer)) != -1) {
-                total += n; check(total <= expected.size && total <= limit, "ZIP decompression overflow");
-                crc.update(buffer, 0, n); output.write(buffer, 0, n);
+            int total = 0;
+            while (total < output.length) {
+                int n = input.read(output, total, output.length - total);
+                check(n > 0, "ZIP member truncated");
+                crc.update(output, total, n);
+                total += n;
             }
-            check(total == expected.size && crc.getValue() == expected.crc, "ZIP size/CRC mismatch");
+            check(input.read() == -1, "ZIP decompression overflow");
+            check(crc.getValue() == expected.crc, "ZIP size/CRC mismatch");
         }
-        return output.toByteArray();
+        return output;
     }
     @Override public void close() throws IOException { zip.close(); }
 }
