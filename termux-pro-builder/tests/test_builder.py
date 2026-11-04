@@ -35,6 +35,29 @@ class Builder(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'checksum'):
                 builder.check_hash(path, hashlib.sha256(b'approved source').hexdigest())
 
+    def test_corrupt_download_is_retried_until_pinned_hash_matches(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'source.tar.gz'
+            approved = b'verified upstream source'
+            digest = hashlib.sha256(approved).hexdigest()
+            with mock.patch.object(builder.urllib.request, 'urlopen',
+                                   side_effect=[io.BytesIO(b'bad gateway'), io.BytesIO(approved)]) as download:
+                self.assertEqual(builder.fetch('https://example.org/source.tar.gz', path, digest), path)
+            self.assertEqual(download.call_count, 2)
+            self.assertEqual(path.read_bytes(), approved)
+            self.assertFalse(path.with_suffix('.gz.partial').exists())
+
+    def test_corrupt_download_never_promotes_unverified_archive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'source.tar.gz'
+            digest = hashlib.sha256(b'approved source').hexdigest()
+            with mock.patch.object(builder.urllib.request, 'urlopen',
+                                   side_effect=lambda *args, **kwargs: io.BytesIO(b'invalid source')):
+                with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
+                    builder.fetch('https://example.org/source.tar.gz', path, digest)
+            self.assertFalse(path.exists())
+            self.assertFalse(path.with_suffix('.gz.partial').exists())
+
     def test_source_offer_contains_verified_sources_and_build_instructions(self):
         with tempfile.TemporaryDirectory() as directory:
             cache = Path(directory) / 'cache'
