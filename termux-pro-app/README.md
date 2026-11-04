@@ -100,14 +100,18 @@ of the test APK as a passing device run.
 GitHub Actions publishes `termux-pro-apk-candidate` (app plus instrumentation APK,
 checksums, source revision and bootstrap digest), separately from `termux-pro-proof-apk`.
 APK build/lint and archive checks do **not** prove it starts on Android.
-An automatic `emulator-smoke` job uses `macos-26-intel` and the
+An automatic `emulator-smoke` job uses stable `macos-15-intel` and the
 minimum-supported Android 11 (API 30) Google APIs x86_64 image with ARM64
 translation. It installs the real candidate APK, launches `TerminalActivity`,
 requires a visible soft keyboard, commits text via Android's `InputConnection`,
 and checks that bundled Bash executes the resulting command. It saves logcat,
 Activity state, a screenshot and instrumentation results on failure.
-The previous Android 16 emulator timed out before boot; Android 11 is the
-lighter CI smoke target, not evidence of Android 16 compatibility. An unavailable
+An earlier Android 16 emulator timed out booting. A later Android 11 emulator
+booted but suffered system-service ANRs and showed the launcher/system ANR dialog
+rather than the terminal during the IME test. The instrumentation now requires
+foreground-window focus before checking IME visibility, so this infrastructure
+failure is reported distinctly from a terminal-input failure. Neither emulator
+failure proves Android 16 or device keyboard compatibility. An unavailable
 emulator/ARM64 bridge must fail rather than count as successful Android execution.
 This remains **translated-ARM emulator evidence**, not native ARM64 E2/E3.
 The
