@@ -87,6 +87,8 @@ public final class TerminalAcceptance {
         record.put("E2", "SEPARATE_PROOF_REQUIRED"); record.put("E3", "NOT RUN");
         main(() -> { app.closeSession(); return null; });
         await(() -> main(() -> shell.getPid() == -1), "Session did not close/reap");
+        main(() -> { shell.updateSize(80, 24, 8, 16); return null; });
+        record.put("closed_session_resize", "PASS");
         record.put("close_reap", "PASS");
         Files.write(result, (record.toString(2) + "\n").getBytes(StandardCharsets.UTF_8));
     }

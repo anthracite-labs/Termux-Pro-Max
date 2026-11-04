@@ -10,7 +10,8 @@ The GPL app and termux-shared are not included.
 Local changes: trailing whitespace removed from one cursor-controller line; standalone Gradle configuration/min API 30; JNI loads tp-pty;
 TerminalSession uses public ParcelFileDescriptor-owned duplicated descriptors
 instead of hidden FileDescriptor reflection, handles native startup failure and
-guards process signaling against PID zero and reaps failed-start children.
+guards process signaling against PID zero, reaps failed-start children and
+skips native resize after process exit.
 The original compile-only AndroidX annotation 1.3.0 is retained; it adds no
 runtime Kotlin dependency. Native PTY implementation is our own.
 Android rendering, keyboard, lifecycle and accessibility acceptance is pending.

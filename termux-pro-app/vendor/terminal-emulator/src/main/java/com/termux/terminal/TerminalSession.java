@@ -104,7 +104,7 @@ public final class TerminalSession extends TerminalOutput {
         if (mEmulator == null) {
             initializeEmulator(columns, rows, cellWidthPixels, cellHeightPixels);
         } else {
-            JNI.setPtyWindowSize(mTerminalFileDescriptor, rows, columns, cellWidthPixels, cellHeightPixels);
+            if (mShellPid > 0) JNI.setPtyWindowSize(mTerminalFileDescriptor, rows, columns, cellWidthPixels, cellHeightPixels);
             mEmulator.resize(columns, rows, cellWidthPixels, cellHeightPixels);
         }
     }
