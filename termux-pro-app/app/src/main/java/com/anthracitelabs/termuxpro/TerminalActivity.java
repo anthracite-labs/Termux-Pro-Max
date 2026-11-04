@@ -31,7 +31,7 @@ public final class TerminalActivity extends Activity {
         status = new TextView(this); status.setTextColor(Color.LTGRAY); status.setText(R.string.preview);
         status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); layout.addView(status);
         terminal = new TerminalView(this, null); terminal.setTerminalViewClient(app);
-        terminal.setTypeface(Typeface.MONOSPACE); terminal.setTextSize(app.fontPixels());
+        terminal.setTextSize(app.fontPixels()); terminal.setTypeface(Typeface.MONOSPACE);
         terminal.setContentDescription(getString(R.string.terminal_description));
         layout.addView(terminal, new LinearLayout.LayoutParams(-1, 0, 1));
         LinearLayout keys = new LinearLayout(this);
