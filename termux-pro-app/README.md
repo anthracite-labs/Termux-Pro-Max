@@ -100,12 +100,16 @@ of the test APK as a passing device run.
 GitHub Actions publishes `termux-pro-apk-candidate` (app plus instrumentation APK,
 checksums, source revision and bootstrap digest), separately from `termux-pro-proof-apk`.
 APK build/lint and archive checks do **not** prove it starts on Android.
-An automatic `emulator-smoke` job uses `macos-26-intel`, an Android 16 (API 36)
-Google APIs x86_64 image and its advertised ARM64 native translation support.
-It installs the actual candidate APK, launches `TerminalActivity`, runs
-`TerminalStartupSmoke`, and saves logcat/Activity evidence on failure. An
-unsupported ARM64 native bridge fails the job rather than being counted as a pass.
-This is a launch smoke test, **not** native ARM64 E2/E3 or Bash/PTY acceptance.
+An automatic `emulator-smoke` job uses `macos-26-intel` and the
+minimum-supported Android 11 (API 30) Google APIs x86_64 image with ARM64
+translation. It installs the real candidate APK, launches `TerminalActivity`,
+requires a visible soft keyboard, commits text via Android's `InputConnection`,
+and checks that bundled Bash executes the resulting command. It saves logcat,
+Activity state, a screenshot and instrumentation results on failure.
+The previous Android 16 emulator timed out before boot; Android 11 is the
+lighter CI smoke target, not evidence of Android 16 compatibility. An unavailable
+emulator/ARM64 bridge must fail rather than count as successful Android execution.
+This remains **translated-ARM emulator evidence**, not native ARM64 E2/E3.
 The
 `Android APK CI` workflow can run `device-test` with a manual
 `workflow_dispatch` and `run_device=true` on a self-hosted Linux runner labeled
