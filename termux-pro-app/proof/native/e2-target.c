@@ -37,12 +37,16 @@ int main(int argc, char **argv) {
     }
     if (!strcmp(argv[1], "pty")) {
         if (!isatty(0) || !isatty(1) || !isatty(2) || tcgetpgrp(0) != getpgrp()) return 68;
+        sigset_t resize_set, previous;
+        sigemptyset(&resize_set); sigaddset(&resize_set, SIGWINCH);
+        if (sigprocmask(SIG_BLOCK, &resize_set, &previous)) return 68;
         struct sigaction action = {.sa_handler = resize_signal};
         sigemptyset(&action.sa_mask);
         if (sigaction(SIGWINCH, &action, NULL)) return 68;
         puts("E2 PTY READY"); fflush(stdout);
         for (;;) {
-            pause();
+            // Atomically unblock/wait: a resize delivered just after READY must not be lost.
+            while (!resized) sigsuspend(&previous);
             if (resized) {
                 resized = 0;
                 struct winsize size;

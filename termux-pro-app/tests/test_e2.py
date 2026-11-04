@@ -19,6 +19,15 @@ class LinkerProof(unittest.TestCase):
                      '-DTP_SYSTEM_LINKER="/lib64/ld-linux-x86-64.so.2"']
             for name in ['target', 'launcher', 'driver']:
                 sources = [str(ROOT / f'proof/native/e2-{name}.c')]
+                if name == 'target':
+                    # Force SIGWINCH to arrive between READY and waiting. A check-then-pause
+                    # loop loses this wakeup; the target must use an atomic signal wait.
+                    source = Path(sources[0]).read_text()
+                    ready = 'puts("E2 PTY READY"); fflush(stdout);'
+                    self.assertEqual(source.count(ready), 1)
+                    delayed = folder / 'target-delayed.c'
+                    delayed.write_text(source.replace(ready, ready + ' usleep(100000);'))
+                    sources = [str(delayed)]
                 if name != 'target':
                     sources.append(str(COMMON / 'tp_exec.c'))
                 subprocess.run(['gcc', *flags, *sources, '-o', str(folder / name)], check=True)
