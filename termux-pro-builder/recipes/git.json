@@ -1,0 +1,34 @@
+{
+  "id": "git",
+  "backend": "core",
+  "dependencies": [
+    "curl",
+    "openssl",
+    "zlib",
+    "ca-certificates",
+    "bash"
+  ],
+  "commands": [
+    "git",
+    "git-remote-http",
+    "git-remote-https",
+    "git-upload-pack",
+    "git-receive-pack",
+    "git-upload-archive",
+    "git-shell"
+  ],
+  "patches": [
+    {
+      "path": "patches/git/0001-bionic-no-pthread-cancellation.patch",
+      "sha256": "7fecf8f7be3a53442b4f2269f93f7d0270c3267a444119d6358828e14cd27c7b",
+      "upstream": "https://www.kernel.org/pub/software/scm/git/git-2.56.0.tar.xz",
+      "license": "GPL-2.0-only",
+      "reason": "Bionic provides pthreads but no pthread cancellation. Omit only the unsupported cancellation-state calls on Android; keep pthread signal masking and threading.",
+      "test": "clean Android cross-build and package validation; actual Android runtime NOT RUN"
+    }
+  ],
+  "required_files": [],
+  "integration_probes": [
+    "Actual Android package and child-process acceptance NOT RUN"
+  ]
+}

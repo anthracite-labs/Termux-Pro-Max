@@ -52,3 +52,37 @@ fingerprint, in addition to source and detached-signature SHA-256 digests.
 Trust acquisition uses the listed official TLS sources and observed fingerprints.
 It is not an independent maintainer identity audit. GPG machine status is parsed
 separately from human diagnostics; a diagnostic line cannot satisfy signer checks.
+
+## Git/curl and CA-data checkpoint inputs
+
+`git-curl-signers.gpg` contains only public keys and signing subkeys; SHA-256
+`12253e8c5a001a4c2c6c2c3296a2a4cc787b07bf20e1e11d5edbb47366f59b85`.
+Git 2.56.0 and curl 8.23.0 archive/signature hashes and signer fingerprints are
+locked in sources.lock. Git's detached signature covers the uncompressed tar;
+the compressed and uncompressed SHA-256 values are both checked before GPG.
+
+- Git signing subkey `E1F036B1FEE7221FC778ECEFB0B5E88696AFE6CB`, primary
+  `96E07AF25771955980DAD10020D04E5A713660A7`. Key obtained by exact signing
+  fingerprint from keyserver.ubuntu.com; downloaded ASCII-key SHA-256
+  `fd2809d850e844b614ac60f13ded554c55d9052e5c799a5814abcba2a68a063c`.
+  Fingerprint was observed in the detached signature from the official
+  kernel.org Git release directory. This is a documented TLS/key-acquisition
+  trust root, not an independent maintainer identity audit.
+- curl key `27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2`, from
+  https://daniel.haxx.se/mykey.asc; downloaded SHA-256
+  `64619d3c1a2b68da837014b2ab02a049ed2c69aaebfa10a20a4f29dab003ecb8`.
+  The source hash also matches the official curl/curl release-asset metadata.
+- Dated CA source: https://curl.se/ca/cacert-2026-10-20.pem, SHA-256
+  `796f1389bfea13c0ed78f663b765baaff54a508e5483786bd6ece73c5e3e3cbe`,
+  matching its official adjacent .sha256 file. No detached signature is
+  supplied for that data carrier. MPL 2.0 license text is pinned in the recipe,
+  copied from https://www.mozilla.org/media/MPL/2.0/index.815ca599c9df.txt,
+  SHA-256 `fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85`.
+
+The Git build uses Bionic iconv (no additional libiconv binary). Its BOM cache
+setting follows Android API 30 source:
+https://android.googlesource.com/platform/bionic/+/refs/tags/android-11.0.0_r48/libc/bionic/iconv.cpp
+(source SHA-256 `88836b6a65ee8ca11b704300bb18e03c2015e2c0e7a63660970485757ad6b721`).
+The upstream C compatibility build is selected; optional Perl/Python/Tcl Git
+helpers are not part of the native-only command inventory. Runtime acceptance
+of Git, HTTPS, SSH and encoding behavior on Android remains NOT RUN.

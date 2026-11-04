@@ -55,5 +55,45 @@ case "$TP_PACKAGE" in
         done
         install -m 0644 "$source_dir/ssh_config" "$stage_dir$prefix/etc/ssh/ssh_config"
         ;;
+    ca-certificates)
+        mkdir -p "$stage_dir$prefix/etc/tls"
+        install -m 0644 "$source_dir"/cacert-*.pem "$stage_dir$prefix/etc/tls/cert.pem"
+        ;;
+    curl)
+        export CFLAGS="$CFLAGS -ffile-prefix-map=$source_dir=curl-source"
+        "$source_dir/configure" --prefix="$prefix" --host=aarch64-linux-android --build=x86_64-pc-linux-gnu \
+            --enable-shared --disable-static --with-openssl="$sysroot$prefix" --with-zlib="$sysroot$prefix" \
+            --with-ca-bundle="$prefix/etc/tls/cert.pem" --without-ca-path --without-ca-fallback \
+            --without-libpsl --without-brotli --without-zstd --without-libidn2 \
+            --without-nghttp2 --without-nghttp3 --without-ngtcp2 --without-quiche \
+            --without-libssh2 --without-libssh --without-librtmp --without-gssapi \
+            --disable-ldap --disable-ldaps --disable-docs
+        make -j"${TP_JOBS:-2}"
+        make DESTDIR="$stage_dir" install
+        ;;
+    git)
+        export CFLAGS="$CFLAGS -ffile-prefix-map=$source_dir=git-source"
+        # API 30 includes Bionic iconv; no opaque libiconv target dependency is needed.
+        printf '#include <iconv.h>\nint main(void) { iconv_t c = iconv_open("UTF-8", "UTF-16LE"); return c == (iconv_t)-1 ? 1 : iconv_close(c); }\n' | "$CC" -x c - -o iconv-probe
+        cd "$source_dir"
+        # API 30 Bionic exposes explicit-endian UTF-16/32; Git must add the BOM itself.
+        # android-11.0.0_r48/libc/bionic/iconv.cpp (__parse_encoding).
+        export ac_cv_iconv_omits_bom=yes
+        export ac_cv_fread_reads_directories=no ac_cv_snprintf_returns_bogus=no
+        ./configure --prefix="$prefix" --sysconfdir="$prefix/etc" \
+            --host=aarch64-linux-android --build=x86_64-pc-linux-gnu \
+            --with-openssl="$sysroot$prefix" --with-curl="$sysroot$prefix" --with-shell=/bin/sh \
+            --without-tcltk --without-expat
+        # Host generators use /bin/sh; the compiled target shell is managed Bash.
+        # CC_LD_DYNPATH suppresses sysroot RUNPATH injection; LDFLAGS retains only PREFIX/lib.
+        # NO_RUST selects upstream C compatibility implementations, without a new target runtime.
+        make_flags=("prefix=$prefix" "gitexecdir=$prefix/bin" SHELL_PATH=/bin/sh \
+            "SHELL_PATH_CQ=\"$prefix/bin/bash\"" "CFLAGS=$CFLAGS" "LDFLAGS=$LDFLAGS" \
+            "CURL_CONFIG=$sysroot$prefix/bin/curl-config" CURL_LDFLAGS=-lcurl CC_LD_DYNPATH= \
+            NO_GETTEXT=YesPlease NO_PERL=YesPlease NO_PYTHON=YesPlease NO_TCLTK=YesPlease \
+            NO_EXPAT=YesPlease NO_RUST=YesPlease NO_INSTALL_HARDLINKS=YesPlease RUNTIME_PREFIX= DEFAULT_PAGER=cat)
+        make -j"${TP_JOBS:-2}" "${make_flags[@]}"
+        make "${make_flags[@]}" DESTDIR="$stage_dir" install
+        ;;
     *) echo "Unknown core recipe: $TP_PACKAGE" >&2; exit 1 ;;
 esac

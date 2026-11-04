@@ -35,7 +35,7 @@ No universal Android, 16 KB, PTY or real-package compatibility is claimed.
 | T04 E2 semantics | IMPLEMENTED, Android acceptance pending | Dynamic ELF fixture and Linux linker/PTY regression pass; obtain actual Android E2 log |
 | T05 child probe | PENDING | Separate fixture proof from actual E3 package-chain acceptance |
 | T06 execution ADR | CANDIDATE | E2/E3 evidence; ADR-004 is not final |
-| T07 package contract | PARTIAL | Python producer/verifier and negative fixtures implemented; Android consumer pending |
+| T07 package contract | PARTIAL | Python producer and production Java consumer pass host/static checks; Android loading pending |
 | T08 toolchain/backend | PARTIAL | NDK/compiler/key/source pins and doctor implemented; immutable host image and clean CI acceptance pending |
 | T09 source build | IMPLEMENTED, local and Ubuntu CI passed | Bash/ncurses/readline built from pinned, signature-verified sources; runtime acceptance pending |
 | T10 package generation | PARTIAL | Packages/bootstrap generated; inventory, ELF and dependency checks pass; Android loading pending |
@@ -44,7 +44,7 @@ No universal Android, 16 KB, PTY or real-package compatibility is claimed.
 | T13 PTY/session | IMPLEMENTED, Android acceptance pending | Native PTY plus host resize/Ctrl+C/startup-error tests pass; Android job-control/lifecycle matrix pending |
 | T14 bootstrap/install | IMPLEMENTED, Android acceptance pending | Java contract consumer, staging, ownership, journal/rollback, launcher repair and host crash/HOME tests pass |
 | T15 app integration | TEST HARNESS READY, NOT RUN | APK bundles source-built Bash; physical-device instrumentation pending |
-| T16 Git/OpenSSH | IN PROGRESS | zlib/OpenSSL packages pass static checks; OpenSSH clients compile, host-path packaging fix pending; Git and Android acceptance pending |
+| T16 Git/OpenSSH | IN PROGRESS | Bash/OpenSSH/Git nine-package clean source build and Python/Java static closure pass; actual Android package execution pending |
 | T17 GH/real E3 | PENDING | Source-build GH and record actual GH → Git → SSH execution |
 | T18 Python/Node | PENDING | Sources/dependencies, resources and subprocess device probes |
 | T19 importer hardening | PARTIAL | Shared negative archives, central-directory validation, tamper/crash/HOME tests pass on host; broader adversarial/device review pending |
@@ -155,3 +155,49 @@ the host-path verifier remains enforced. All three package static checks and the
 OpenSSH dependency check pass; the production Java consumer also accepts the
 six-package local Bash-plus-SSH closure. Android SSH/runtime acceptance is NOT RUN.
 Git/GH/real E3 and Python/Node remain outstanding.
+
+
+## Git source-build checkpoint (4 November 2026)
+
+Clean source build of ncurses/readline/Bash/zlib/OpenSSL/OpenSSH/CA/curl/Git:
+**PASS_STATIC**, including Git 2.56.0, curl 8.23.0 and dated 2026-10-20 CA data.
+Actual Git/curl source signatures and compressed hashes verified. Git signatures
+cover the separately hash-verified uncompressed tar. The CA carrier has a pinned
+checksum and MPL license, without an upstream detached signature.
+
+curl's real Android output and SONAME are `libcurl.so`; the required package
+output and Git HTTP helper DT_NEEDED agree. No `.so.4` alias was fabricated.
+Git uses upstream C compatibility implementations and Bionic iconv; only unsupported
+pthread cancellation-state calls are guarded on Android. Fixed managed Bash,
+managed helper path, private RUNPATH, Android linker, dependency closure, templates,
+CA bytes and compiled CA path pass static checks. Host source paths remain rejected.
+
+Commands run from the core-source worktree (with existing caches preserved):
+
+```sh
+TP_NDK_HOME=/workspace/android-tools/sdk/ndk/28.2.13676358 TP_SOURCE_CACHE=/workspace/source-inputs TP_OUTPUT_DIR=/workspace/checkpoint-builds/pr3-combined-20261104 ./termux-pro-builder/build.sh bootstrap bash openssh git
+TP_OUTPUT_DIR=/workspace/checkpoint-builds/pr3-combined-20261104 ./termux-pro-builder/build.sh test git
+TP_OUTPUT_DIR=/workspace/checkpoint-builds/pr3-combined-20261104 ./termux-pro-builder/build.sh test openssh
+TP_OUTPUT_DIR=/workspace/checkpoint-builds/pr3-combined-20261104 ./termux-pro-builder/build.sh test bash
+/workspace/android-tools/jdk-21.0.9+10/bin/javac -Xlint:all -d /workspace/scratch/checkpoint-pr3-java termux-pro-app/app/src/main/java/com/anthracitelabs/termuxpro/bootstrap/*.java termux-pro-app/tests/BootstrapHost.java
+/workspace/android-tools/jdk-21.0.9+10/bin/java -cp /workspace/scratch/checkpoint-pr3-java com.anthracitelabs.termuxpro.bootstrap.BootstrapHost closure /workspace/checkpoint-builds/pr3-combined-20261104/packages shared/target.json
+python3 -m unittest discover -s termux-pro-builder/tests -v
+python3 -m unittest discover -s shared/tests -v
+```
+
+All listed checks PASS; builder nine tests and shared/evidence six tests.
+Production Python validation accepts all nine packages; the Java Android consumer
+also accepts the complete nine-package closure. Independent bootstrap/source ZIP
+index/member SHA-256 audits pass. Exact local commands/output are in
+`/workspace/scratch/checkpoint-pr3-*`; compiled candidates and corresponding source
+remain in `/workspace/checkpoint-builds/pr3-combined-20261104`. These local artifacts
+record the working baseline plus dirty build-input identity; CI must independently
+build the final pushed revision. CI now builds this combined profile and passes
+its same-run bootstrap to terminal APK assembly.
+
+Earlier diagnostic failures (curl required filename, Git configure cross-run,
+unsupported Bionic cancellation calls, Rust default, host-sysroot RUNPATH) were
+resolved without weakening package validation; failed artifacts/logs are preserved.
+Build warnings include upstream cross-compile assumptions and API-macro redefinition.
+No actual Android Git/SSH/HTTPS, E2, E3 or terminal runtime pass is claimed.
+No GH, Python or Node implementation was started. Release gates remain open.

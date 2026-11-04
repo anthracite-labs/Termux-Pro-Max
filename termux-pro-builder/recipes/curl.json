@@ -1,0 +1,17 @@
+{
+  "id": "curl",
+  "backend": "core",
+  "dependencies": [
+    "openssl",
+    "zlib",
+    "ca-certificates"
+  ],
+  "commands": [],
+  "patches": [],
+  "required_files": [
+    "lib/libcurl.so"
+  ],
+  "integration_probes": [
+    "Actual Android package and child-process acceptance NOT RUN"
+  ]
+}

@@ -71,5 +71,43 @@
     "keyring": "vendor/core-signers.gpg",
     "keyring_sha256": "7f2bb3f346a3a15afc40871ef86974f9b2557cf1f258f8a03a40f351cd73f258",
     "license": "SSH-OpenSSH"
+  },
+  "curl": {
+    "version": "8.23.0",
+    "upstream": "https://curl.se/",
+    "revision": "8.23.0",
+    "url": "https://curl.se/download/curl-8.23.0.tar.xz",
+    "sha256": "8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5",
+    "signature_url": "https://curl.se/download/curl-8.23.0.tar.xz.asc",
+    "signature_sha256": "dba1562fec2bf698a1226054e6757940e4bf2ab87b3b222a5e7b91348f0b82e2",
+    "signer": "27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2",
+    "keyring": "vendor/git-curl-signers.gpg",
+    "keyring_sha256": "12253e8c5a001a4c2c6c2c3296a2a4cc787b07bf20e1e11d5edbb47366f59b85",
+    "license": "curl"
+  },
+  "git": {
+    "version": "2.56.0",
+    "upstream": "https://git-scm.com/",
+    "revision": "2.56.0",
+    "url": "https://www.kernel.org/pub/software/scm/git/git-2.56.0.tar.xz",
+    "sha256": "26c56c296b38c0695b26fa95f475f1d01704d2d38e73465ca30b0b2f5dc789d3",
+    "signature_url": "https://www.kernel.org/pub/software/scm/git/git-2.56.0.tar.sign",
+    "signature_sha256": "bee7d2f96844063557b07b43811d81e1fc54563e0da2c36a975dfd432b196a5c",
+    "signer": "E1F036B1FEE7221FC778ECEFB0B5E88696AFE6CB",
+    "keyring": "vendor/git-curl-signers.gpg",
+    "keyring_sha256": "12253e8c5a001a4c2c6c2c3296a2a4cc787b07bf20e1e11d5edbb47366f59b85",
+    "license": "GPL-2.0-only",
+    "signature_format": "uncompressed-tar",
+    "uncompressed_sha256": "21610fc67a39c6724b96001665baf60bfaf19191b0aeeb33764dfcd2d020f187"
+  },
+  "ca-certificates": {
+    "version": "2026.10.20",
+    "upstream": "https://curl.se/docs/caextract.html",
+    "revision": "2026-10-20",
+    "url": "https://curl.se/ca/cacert-2026-10-20.pem",
+    "sha256": "796f1389bfea13c0ed78f663b765baaff54a508e5483786bd6ece73c5e3e3cbe",
+    "format": "file",
+    "license": "MPL-2.0",
+    "verification_note": "Matches official dated SHA-256 file over TLS; no upstream detached signature is provided for this CA data carrier."
   }
 }
