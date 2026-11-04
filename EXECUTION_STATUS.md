@@ -4,6 +4,22 @@ This tracks implementation of the engineering blueprint, not just PR #1's initia
 experiment. The owner has requested continued independent builder/app development
 while runtime gates are addressed. No release or unrun device test is implied.
 
+
+## Current authoritative checkpoint — after merging PRs #1–#3
+
+**Baseline:** `main` merge sequence was PR #1 (`f369c9eeae88d2d11e121a15c99cb7f0874a329a`), PR #2 (`74dd4918c116c3807e6e9ff47875a3f0403417fb`), then PR #3 (`a0373380045184a45d3c7ef69f2dacdcb26be17f`). PR #2 was retargeted from `feature/execution-proof` to `main` before merging. PR #3's Git history includes PR #2 and its corrected path/PTY assertions. This is a **development code merge, not a release or architecture approval**.
+
+**Exact-head verification before merge:** PR #1 `b5f5661` — [two GitHub jobs passed](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41747074287); PR #2 `9320ef1` — [four jobs passed](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41766303775); PR #3 `27e445b` — [four jobs passed](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41769436863). The PR #3 run passed 27 app/native, 6 shared/evidence, 9 builder host regressions; clean Bash/OpenSSH/Git nine-package source build, Python and Java static package-contract checks, proof APK, terminal APK/instrumentation APK builds and lint. Downloadable artifacts: [terminal/test APKs](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41769436863/artifacts/13293689622) and [nine-package bootstrap, packages and corresponding source](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41769436863/artifacts/13294233074). GitHub Actions artifact retention is limited; record independent digests/provenance. These PR results are not automatically checks on the new `main` merge head.
+
+**Builder implemented:** source-built ncurses, readline, Bash, zlib, OpenSSL, OpenSSH (client-only), CA certificates, curl and Git; signed source input verification where available, hashed CA bundle, package inventory, ELF/SONAME/RUNPATH/dependency checks, external-hash ZIP bootstrap and corresponding-source bundle. Source built and static-validated is **not** Android runtime verified. GitHub CLI (GH), Python and Node.js remain unimplemented.
+
+**Android app implemented:** single-session terminal candidate, native PTY, managed protected launcher, archive/ELF/identity validation and transactional bootstrap with crash recovery; the terminal acceptance test now captures TTY status before redirecting its output. Code compiles, but physical Android terminal, E2, Bash/Git/SSH execution, real E3 and full lifecycle/accessibility/16 KB acceptance remain **NOT RUN**.
+
+**Next order:** Android E2 fixture → actual bundled terminal/PTY/bootstrap and Bash/Git/OpenSSH device acceptance → source-build GH and prove real GH → Git → SSH E3 → Python/Node and subprocess acceptance → hardening, API/OEM/16 KB, distribution/signing/license/security, T21 readiness. Builder and device-proof work may advance in parallel when safe; E3 must not block its own package prerequisites.
+
+**Release:** NOT READY. A green Ubuntu workflow is not the same as a passing Android device, an accepted execution ADR or an approved distribution policy. The target remains ARM64, primary Android user, `com.anthracitelabs.termuxpro`, compiled `files/usr` prefix and APK-bundled packages only.
+
+
 ## Measured architecture evidence
 
 | Gate | Current result | Scope / evidence |
@@ -36,15 +52,15 @@ No universal Android, 16 KB, PTY or real-package compatibility is claimed.
 | T05 child probe | PENDING | Separate fixture proof from actual E3 package-chain acceptance |
 | T06 execution ADR | CANDIDATE | E2/E3 evidence; ADR-004 is not final |
 | T07 package contract | PARTIAL | Python producer and production Java consumer pass host/static checks; Android loading pending |
-| T08 toolchain/backend | PARTIAL | NDK/compiler/key/source pins and doctor implemented; immutable host image and clean CI acceptance pending |
-| T09 source build | IMPLEMENTED, local and Ubuntu CI passed | Bash/ncurses/readline built from pinned, signature-verified sources; runtime acceptance pending |
-| T10 package generation | PARTIAL | Packages/bootstrap generated; inventory, ELF and dependency checks pass; Android loading pending |
-| T11 CI parity | PARTIAL | Source-builder and proof APK Ubuntu CI passed; terminal APK CI configured; release host-image pin still pending |
+| T08 toolchain/backend | PARTIAL | NDK/compiler/key/source pins and doctor implemented; **source CI passes**; immutable host-image digest and release approval still pending |
+| T09 source build | IMPLEMENTED, local and Ubuntu CI passed | Nine-package Bash/OpenSSH/Git closure built from verified source inputs (CA bundle hash-locked); actual Android runtime pending |
+| T10 package generation | IMPLEMENTED, static checks passed | Nine-package bootstrap, corresponding sources and Python/Java package consumer conformance pass; Android loading pending |
+| T11 CI parity | PARTIAL, candidate CI passed | PR #3 source/host/proof/terminal jobs all passed; release host-image pin, Android acceptance and clean release provenance pending |
 | T12 terminal screen | IMPLEMENTED, acceptance pending | Pinned Apache terminal renderer, keyboard controls and Unicode/ANSI test APK; real UI/accessibility review pending |
 | T13 PTY/session | IMPLEMENTED, Android acceptance pending | Native PTY plus host resize/Ctrl+C/startup-error tests pass; Android job-control/lifecycle matrix pending |
 | T14 bootstrap/install | IMPLEMENTED, Android acceptance pending | Java contract consumer, staging, ownership, journal/rollback, launcher repair and host crash/HOME tests pass |
 | T15 app integration | TEST HARNESS READY, NOT RUN | APK bundles source-built Bash; physical-device instrumentation pending |
-| T16 Git/OpenSSH | IN PROGRESS | Bash/OpenSSH/Git nine-package clean source build and Python/Java static closure pass; actual Android package execution pending |
+| T16 Git/OpenSSH | IMPLEMENTED, runtime acceptance pending | Git 2.56.0, OpenSSH clients, curl/CA/crypto and Bash nine-package clean source build and Python/Java static closure PASS; Android Git/SSH/HTTPS and child launch NOT RUN |
 | T17 GH/real E3 | PENDING | Source-build GH and record actual GH → Git → SSH execution |
 | T18 Python/Node | PENDING | Sources/dependencies, resources and subprocess device probes |
 | T19 importer hardening | PARTIAL | Shared negative archives, central-directory validation, tamper/crash/HOME tests pass on host; broader adversarial/device review pending |
@@ -67,7 +83,7 @@ observation, not reclassified as passing Android tests.
 
 The proof APK includes a separate dynamic ELF target asset, protected E2 launcher, and seven-case driver. Linux process/PTY regression and NDK ELF/APK build/lint checks pass; **Android E2 remains NOT RUN**. No E3 fixture or host test is promoted to the real source-built GH/Git/SSH gate.
 
-## Source-builder checkpoint — 4 November 2026
+## Historical source-builder checkpoint — 4 November 2026
 
 The standalone builder now compiles ncurses 6.5, readline 8.2 and Bash 5.2.37
 from pinned official GNU source archives. All three detached signatures were
@@ -100,7 +116,7 @@ The source-offer regression checks every recorded member hash and rejects a
 tampered cached source. Three builder unit tests pass locally. CI execution is
 pending observation; it does not replace Android acceptance.
 
-## Terminal/bootstrap continuation
+## Historical terminal/bootstrap continuation
 
 Source builder, host regression and proof APK jobs passed in Ubuntu run
 [41749639363](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41749639363)
@@ -131,7 +147,7 @@ errors; warnings remain). Physical-device instrumentation is implemented and
 compiled separately; **not run**. Android E2, E3, app PTY/bootstrap/UI acceptance,
 rotation/background/accessibility, 16 KB and broader compatibility remain open.
 
-## Committed core-source checkpoint
+## Historical committed core-source checkpoint
 
 Ubuntu run [41757237782](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41757237782)
 passed all four jobs: host-proof, source-builder, android-apk and terminal-apk.
@@ -147,7 +163,7 @@ adaptations, but their embedded host source filenames still need remapping befor
 package verification can pass. Five builder unit tests pass. No Android SSH, Git,
 GH, E2 or E3 pass is claimed. Git/GH/Python/Node and release gates remain open.
 
-### OpenSSH clean-build result
+### Historical OpenSSH clean-build result
 
 A complete clean CLI build now passes for zlib 1.3.2, OpenSSL 3.5.9 and the
 OpenSSH 10.6p1 client package. Source filenames are mapped during OpenSSH compile;
@@ -157,7 +173,7 @@ six-package local Bash-plus-SSH closure. Android SSH/runtime acceptance is NOT R
 Git/GH/real E3 and Python/Node remain outstanding.
 
 
-## Git source-build checkpoint (4 November 2026)
+## Historical Git source-build checkpoint (4 November 2026)
 
 Clean source build of ncurses/readline/Bash/zlib/OpenSSL/OpenSSH/CA/curl/Git:
 **PASS_STATIC**, including Git 2.56.0, curl 8.23.0 and dated 2026-10-20 CA data.
@@ -202,7 +218,7 @@ Build warnings include upstream cross-compile assumptions and API-macro redefini
 No actual Android Git/SSH/HTTPS, E2, E3 or terminal runtime pass is claimed.
 No GH, Python or Node implementation was started. Release gates remain open.
 
-## Review checkpoint: PR #2 path aliases and PTY assertion (4 November 2026)
+## Historical review checkpoint: PR #2 path aliases and PTY assertion (4 November 2026)
 
 Equivalent ancestor aliases of the fixed compiled app prefix now compare by
 canonical filesystem identity. The prefix itself must remain a real directory;
@@ -235,7 +251,7 @@ remain **NOT RUN**. E0/E1 remain scoped to the supplied OPPO fixture and origina
 evidence revision. No release, universal compatibility or PR merge is authorized.
 
 
-## Integrated clean Git checkpoint
+## Historical integrated clean Git checkpoint
 
 PR #2 path/PTY commit `9320ef1f0d6460b2ffecd0a710711d87269eebb0` was normally
 pushed before integration. Its exact-head Ubuntu run
