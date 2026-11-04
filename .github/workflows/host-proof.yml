@@ -127,10 +127,11 @@ jobs:
           set -o pipefail
           mkdir -p termux-pro-builder/output
           ./termux-pro-builder/build.sh doctor > termux-pro-builder/output/doctor.log
-          ./termux-pro-builder/build.sh bootstrap bash openssh git 2>&1 | tee termux-pro-builder/output/build.log
+          ./termux-pro-builder/build.sh bootstrap bash openssh git gh 2>&1 | tee termux-pro-builder/output/build.log
           ./termux-pro-builder/build.sh test bash | tee termux-pro-builder/output/bash-static.json
           ./termux-pro-builder/build.sh test openssh | tee termux-pro-builder/output/openssh-static.json
           ./termux-pro-builder/build.sh test git | tee termux-pro-builder/output/git-static.json
+          ./termux-pro-builder/build.sh test gh | tee termux-pro-builder/output/gh-static.json
           mkdir -p termux-pro-app/build/consumer-check
           javac -d termux-pro-app/build/consumer-check termux-pro-app/app/src/main/java/com/anthracitelabs/termuxpro/bootstrap/*.java termux-pro-app/tests/BootstrapHost.java
           java -cp termux-pro-app/build/consumer-check com.anthracitelabs.termuxpro.bootstrap.BootstrapHost closure termux-pro-builder/output/packages shared/target.json | tee termux-pro-builder/output/java-consumer.log
@@ -187,7 +188,7 @@ jobs:
         with:
           name: termux-pro-source-bootstrap
           path: termux-pro-builder/output
-      - name: Build and lint terminal with bundled Bash, OpenSSH and Git
+      - name: Build and lint terminal with bundled Bash, OpenSSH, Git and GH
         working-directory: termux-pro-app
         run: |
           set -o pipefail

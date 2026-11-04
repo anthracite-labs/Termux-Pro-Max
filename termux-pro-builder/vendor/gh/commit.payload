@@ -1,0 +1,9 @@
+tree bda6d94df1932516804907a320cb70e1524339b6
+parent 4f2cfe92e3499f8581bf39db77e0a1431fa7b55c
+parent ab3efc24f8e74f7588f06d0d368d31279166950d
+author Kynan Ware <47394200+BagToad@users.noreply.github.com> 1793037767 -0600
+committer GitHub <noreply@github.com> 1793037767 -0600
+
+Merge pull request #14815 from cli/babakks/auth-status-expired-hint
+
+fix(gh auth status): explain expired expiring tokens with `--no-refresh`

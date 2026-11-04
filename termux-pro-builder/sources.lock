@@ -109,5 +109,26 @@
     "format": "file",
     "license": "MPL-2.0",
     "verification_note": "Matches official dated SHA-256 file over TLS; no upstream detached signature is provided for this CA data carrier."
+  },
+  "gh": {
+    "version": "2.103.3",
+    "upstream": "https://github.com/cli/cli",
+    "revision": "63837fb778d6a39f02be0ce76ff89f2bc8d74bdc",
+    "tag": "v2.103.3",
+    "url": "https://github.com/cli/cli/archive/63837fb778d6a39f02be0ce76ff89f2bc8d74bdc.tar.gz",
+    "sha256": "1a64dc5be667fa8c6458c0e639292ee1a5e215854705db267882e1bcf865b335",
+    "license": "MIT",
+    "go_mod_sha256": "db11ba3547fe6420c763b5fb208bb5e41a44598895f94481be01ea967fc421e2",
+    "go_sum_sha256": "13c2ef641a3a15e17ccec65ddc39470e1c5828b082816bf617ddf7edbab2a12f",
+    "build_date": "2026-10-26",
+    "keyring": "vendor/gh-signers.gpg",
+    "keyring_sha256": "878730e9ece9143bb14d634d55aa56f0570876b00aa28cc310090fe7262f1122",
+    "signer": "968479A1AFF927E37D1A566BB5690EEEBB952194",
+    "signed_commit": {
+      "payload": "vendor/gh/commit.payload",
+      "payload_sha256": "579e0b04fd8388d58a9273eb6e9d8be10a7aa384584e726a3a2fe3908baab4f8",
+      "signature": "vendor/gh/commit.asc",
+      "signature_sha256": "40b378eb207074197f88aa98fe86d4fa67c9f71706de4504dd26f6dc752e8b7d"
+    }
   }
 }

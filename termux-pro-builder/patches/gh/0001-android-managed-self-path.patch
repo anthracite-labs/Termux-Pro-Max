@@ -1,0 +1,22 @@
+--- a/internal/ghcmd/cmd.go
++++ b/internal/ghcmd/cmd.go
+@@ -9,6 +9,7 @@
+ 	"os"
+ 	"os/exec"
+ 	"path/filepath"
++	"runtime"
+ 	"slices"
+ 	"strconv"
+ 	"strings"
+@@ -441,6 +442,11 @@
+ // auth login`, running `brew update` will print out authentication errors as git is unable to locate
+ // Homebrew-installed `gh`
+ func executable(fallback string) string {
++	// Explicit Android linker loading makes os.Executable report the linker.
++	// Self-invocation must enter the fixed, installer-managed command.
++	if runtime.GOOS == "android" {
++		return "@TP_PREFIX@/bin/gh"
++	}
+ 	exe, err := os.Executable()
+ 	if err != nil {
+ 		return fallback

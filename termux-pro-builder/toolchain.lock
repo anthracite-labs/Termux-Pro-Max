@@ -13,5 +13,14 @@
     "algorithm": "sha1",
     "value": "a7b54a5de87fecd125a17d54f73c446199e72a64",
     "source": "https://dl.google.com/android/repository/repository2-3.xml"
+  },
+  "go": {
+    "version": "go1.27.3",
+    "url": "https://go.dev/dl/go1.27.3.linux-amd64.tar.gz",
+    "sha256": "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40",
+    "go_sha256": "5f5eb6d0b2fb6aa0bb5d5f8c5f1c944e0de955c925f0111af92a9d8f79680b5b",
+    "provenance": "https://go.dev/dl/?mode=json",
+    "license": "BSD-3-Clause",
+    "role": "Linux amd64 host compiler; not an Android target package"
   }
 }

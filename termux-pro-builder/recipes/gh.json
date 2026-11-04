@@ -1,0 +1,29 @@
+{
+  "id": "gh",
+  "backend": "go",
+  "dependencies": [
+    "git",
+    "openssh",
+    "ca-certificates"
+  ],
+  "commands": [
+    "gh"
+  ],
+  "patches": [
+    {
+      "path": "patches/gh/0001-android-managed-self-path.patch",
+      "sha256": "0a574b5be0dbbbe901a498ea1975ed02bce2aececd581ec957ea2a2c4b854539",
+      "upstream": "https://github.com/cli/cli/blob/63837fb778d6a39f02be0ce76ff89f2bc8d74bdc/internal/ghcmd/cmd.go",
+      "license": "MIT",
+      "reason": "On Android the explicit linker can appear as os.Executable. Return only this application’s fixed managed gh entry for credential/self-invocation. Other platforms retain upstream behavior.",
+      "test": "static compiled managed-path check; Android E3 and credential-helper runtime NOT RUN"
+    }
+  ],
+  "required_files": [
+    "share/gh/build-inputs.json",
+    "share/licenses/gh/Go-LICENSE"
+  ],
+  "integration_probes": [
+    "Real source-built GH -> Git -> SSH Android acceptance NOT RUN; see docs/testing/gh-e3.md"
+  ]
+}
