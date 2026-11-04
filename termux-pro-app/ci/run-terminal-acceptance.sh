@@ -37,7 +37,7 @@ timeout 60 adb install -r "$test_apk"
 # Delete a previous result before starting; stale PASS cannot validate this run.
 timeout 20 adb shell run-as com.anthracitelabs.termuxpro rm -f files/acceptance/terminal-result.json
 timeout 180 adb shell am instrument -w -r \
-    -e class com.anthracitelabs.termuxpro.TerminalAcceptance \
+    -e class com.anthracitelabs.termuxpro.TerminalStartupSmoke,com.anthracitelabs.termuxpro.TerminalAcceptance \
     com.anthracitelabs.termuxpro.test/androidx.test.runner.AndroidJUnitRunner \
     2>&1 | tee "$evidence/instrumentation.log"
 grep -Eq '^OK \([0-9]+ test[s]?\)' "$evidence/instrumentation.log"
