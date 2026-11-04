@@ -3,6 +3,19 @@
 **Status:** test plan plus recorded device evidence; see the scoped observations below and [execution status](EXECUTION_STATUS.md).
 **References:** [Architecture](ARCHITECTURE.md) · [Package contract](PACKAGE_CONTRACT.md) · [App spec](ANDROID_APP_SPEC.md) · [Builder spec](BUILDER_SPEC.md). `[S#]` links in [README](README.md#evidence-register).
 
+## Latest verified baseline — 4 November 2026
+
+| Evidence tier | Verified outcome | Still unverified |
+|---|---|---|
+| User-supplied physical Android observation | E0/E1 managed/protected launcher fixture passes all eight expected exits on OPPO CPH2819 Android 16/API 36, ARM64, 4 KB, at the recorded original APK revision | Applicability to newer launcher, APKs, devices and page sizes |
+| Host unit/negative regressions | At PR #3 head: 27 app/native, 6 shared/evidence, 9 builder tests pass in GitHub Actions | Android OS and OEM semantics |
+| Clean source build and static contract | Nine source packages, source provenance, Python producer/verifier and production Java consumer pass; bootstrap and source bundle published | Android linker loading, child execution, network/SSH behavior |
+| APK assembly and lint | Proof, terminal and instrumentation APKs built; [PR #3 CI](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41769436863) passed 4/4 jobs | Installed terminal behavior; device instrumentation never run |
+| E2/E3 and release | Neither E2 nor E3 has an Android device PASS | E2 system-linker/process semantics, E3 real GH → Git → SSH, Android terminal, 16 KB/OEM/API matrix, security and distribution approval |
+
+**Required progression:** E0/E1 fixture result → E2 device acceptance with the actual matching APK/source digest → terminal/PTY/bootstrap and source-built Bash/Git/OpenSSH device acceptance → source-build GH and test real E3 → Python/Node runtime subprocess tests → T19–T21 release gates. A separate T05 child fixture is not a substitute for real E3. Keep `NOT RUN` until actual device logs exist, and retain source/APK hashes, API/ABI/page-size/targetSdk, expected and actual exits, and a redacted log. Host/static PASS and device PASS are distinct.
+
+
 ## 1. Verification rules
 
 | Plain language | Engineering rule |

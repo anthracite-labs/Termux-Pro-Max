@@ -1,7 +1,7 @@
 # Termux Pro — Dependency-Ordered Implementation Plan
 
 **Status:** engineering plan baseline; current implementation and evidence are tracked in [EXECUTION_STATUS.md](EXECUTION_STATUS.md).
-**Gating philosophy:** one thin, end-to-end proof before expanding. **No speculative package manager, custom linker, modified Bash or multi-ABI support.**  
+**Gating philosophy:** validate minimal E0/E1 and E2 fixtures early, then prove the real source-built GH → Git → SSH chain (E3) once its builder, packages and terminal prerequisites exist. Independent builder and UI work may continue with device gates open. **No speculative package manager, custom linker, modified Bash or multi-ABI support.**
 **Sources and references:** [README](README.md#evidence-register) · [Architecture](ARCHITECTURE.md) · [App](ANDROID_APP_SPEC.md) · [Builder](BUILDER_SPEC.md) · [Contract](PACKAGE_CONTRACT.md) · [Verification](VERIFICATION.md).
 
 ## 1. Capability map
@@ -23,13 +23,13 @@ Dependency direction is one-way: the builder outputs packages conforming to `pac
 | Phase | Plain language | Technical exit condition |
 |---|---|---|
 | 0: Approve baseline | Pick the app identity and what Android phones we support. | Review docs, freeze `APP_ID`, ABI, minSdk, targetSdk, prefix and exact native execution candidates; signed-off requirements. |
-| 1: Prove launch | Show Android can open Bash and a program can start another program. | E0–E3 recorded PASS on selected device matrix, or documented ADR change with a proven alternate route. |
+| 1: Prove execution fixtures | Test protected ELF identity, managed symlinks, dynamic linker and controlled child-process behavior on Android. | E0/E1 and E2 Android fixture evidence or explicit blockers; **real E3 is a Phase 4 gate**. |
 | 2: Build factory | Source-build Bash in a clean repeatable environment. | Builder passes pinned-source checks and produces a contract-valid Bash package locally and in CI. |
 | 3: Ship minimal terminal internally | Run our Bash from our app with real keyboard and PTY. | Interactive session, signals, jobs and package import tests PASS. |
-| 4: Expand ecosystem | Add selected packages one at a time. | GH -> Git -> SSH, Python subprocess, Node child_process probes PASS. |
+| 4: Expand ecosystem | Build and run integrated packages. | Real Android GH → Git → SSH (E3), Python subprocess and Node child_process probes pass after their source-built packages exist. |
 | 5: Harden and prepare distribution | Avoid broken updates and unsafe package imports. | Security/rollback/API/page-size tests PASS; policy gate E5 reviewed for chosen release. |
 
-**Important sequencing note:** E1/E2 can be tested with a minimal known dynamic ELF built by the NDK before the complete package builder exists. Bash source-build and PTY UI can be developed in parallel only after the initial execution proof clearly specifies the interface.
+**Important sequencing note:** E0/E1 and E2 use minimal NDK fixtures. T05 is a child-process **fixture**, not real E3; T17 is real GH → Git → SSH. Source builds, package contract and terminal UI can be developed in parallel after defining the candidate interface. A candidate ADR does not imply device acceptance or release approval.
 
 ## 3. Verifiable task backlog
 
@@ -45,13 +45,13 @@ Tasks are scoped so a future agent can implement and verify each task in a focus
 
 **T04 — Validate Bionic launch semantics.** Test exact linker invocation and argument/env/FD/exit/signal behavior with dynamic fixture. **Acceptance:** E2 PASS or documented failure/fallback; static ELF negative test rejected. **Verify:** Android command output + process observations. **Depends on:** T03.
 
-**T05 — Test raw child-process launch.** Construct Go or C fixture invoking registered Git-like command by name and absolute path. **Acceptance:** documented E3 positive and negative behavior; source patch expectation set. **Verify:** actual device trace and exit status. **Depends on:** T04.
+**T05 — Validate a minimal child-process fixture.** Construct a C or Go fixture invoking registered Git-like test commands through managed paths. **Acceptance:** device-side positive and negative process-launch behavior documented; this fixture is not the real source-built E3 chain. **Verify:** Android trace and exit status. **Depends on:** T04.
 
-**T06 — Freeze execution ADR.** Compare observed path against Termux `termux-exec`, wrapper and direct-linker alternatives; choose one. **Acceptance:** ADR-004 accepted, replaced or rejected with evidence; no second speculative resolver. **Verify:** human architecture review. **Depends on:** T03–T05.
+**T06 — Track and eventually freeze execution ADR.** Compare tested paths with Termux `termux-exec`, wrappers and direct linker options. **Acceptance:** provisional candidate for implementation; final ADR-004 approval only after real Android E2 and T17/E3 evidence. **Verify:** architecture review. **Depends on:** T03–T05 provisionally; T17 for final approval.
 
 ### Builder and package contract
 
-**T07 — Freeze shared manifest and archive format.** Make schema version, hash envelope, command exports, dependency fields, owner index and app prefix concrete; include invalid fixture cases. **Acceptance:** sample accepted/rejected cases documented and two consumers share fixtures. **Verify:** schema conformance tests. **Depends on:** T01,T06.
+**T07 — Freeze shared manifest and archive format.** Make schema version, hash envelope, command exports, dependency fields, owner index and app prefix concrete; include invalid fixture cases. **Acceptance:** sample accepted/rejected cases documented and two consumers share fixtures. **Verify:** schema conformance tests. **Depends on:** T01,T03; T06 may remain provisional.
 
 **T08 — Pin toolchain and upstream build backend.** Select Android NDK, host environment digest and exact reviewed Termux tooling; lock inputs. **Acceptance:** clean `doctor` validates pins; no unreviewed downloads of prebuilt target packages. **Verify:** clean local and CI environment checks. **Depends on:** T07.
 
@@ -65,7 +65,7 @@ Tasks are scoped so a future agent can implement and verify each task in a focus
 
 **T12 — Minimal terminal screen.** Implement accessible terminal view with keyboard, Unicode and ANSI output; use reviewed existing terminal rendering where justified. **Acceptance:** representative manual/screenshot checks and input events PASS. **Verify:** UI automation / accessibility review. **Depends on:** T01.
 
-**T13 — PTY/session bridge.** Open PTY, launch shell via chosen route, handle I/O, SIGWINCH, Ctrl+C, process groups and exit. **Acceptance:** job control, resize and signal tests pass on Android. **Verify:** emulator/device session trace. **Depends on:** T06,T12.
+**T13 — PTY/session bridge.** Open PTY, launch shell via chosen route, handle I/O, SIGWINCH, Ctrl+C, process groups and exit. **Acceptance:** job control, resize and signal tests pass on Android. **Verify:** emulator/device session trace. **Depends on:** T03,T07,T12; E2 Android acceptance remains a runtime gate.
 
 **T14 — Bootstrap and package installation.** Implement staged verified extraction, manifest/ABI/prefix checks, generated managed commands, rollback journal and repair. **Acceptance:** bundled Bash package imports and survives interrupted installation without deleting HOME. **Verify:** corrupted archive, wrong ABI, path traversal, crash-injection tests. **Depends on:** T07,T10,T13.
 
@@ -73,11 +73,11 @@ Tasks are scoped so a future agent can implement and verify each task in a focus
 
 ### Core packages and release
 
-**T16 — Git and OpenSSH recipes.** Build pinned upstream sources and dependencies; patch child paths, TLS/cert/config references. **Acceptance:** Git local repository and Git-to-SSH process launch tests PASS. **Verify:** source recipe logs + Android test. **Depends on:** T11,T15.
+**T16 — Git and OpenSSH recipes.** Build pinned upstream sources and dependencies; patch child paths, TLS/cert/config references. **Acceptance:** Git local repository and Git-to-SSH process launch tests PASS. **Verify:** source recipe logs + Android test. **Depends on:** T09,T10 for source-build implementation; T15 for Android acceptance.
 
-**T17 — GH package and nested launch.** Source-build GitHub CLI; verify GH invokes installed Git via managed PATH, then Git launches SSH. **Acceptance:** full GH→Git→SSH trace E3 PASS. **Verify:** Android integration test with controlled local fixtures where possible; no production credentials. **Depends on:** T16.
+**T17 — GH package and nested launch.** Source-build GitHub CLI; verify GH invokes installed Git via managed PATH, then Git launches SSH. **Acceptance:** full GH→Git→SSH trace E3 PASS. **Verify:** Android integration test with controlled local fixtures where possible; no production credentials. **Depends on:** T16,T15 and successful Android E2 behavior.
 
-**T18 — Python and Node.js packages.** Source-build required runtime and dependencies; preserve data/stdlib/npm assets. **Acceptance:** Python `subprocess` and Node `child_process` launch Git via managed PATH; imports and resource files work. **Verify:** Android runtime tests. **Depends on:** T11,T15.
+**T18 — Python and Node.js packages.** Source-build required runtime and dependencies; preserve data/stdlib/npm assets. **Acceptance:** Python `subprocess` and Node `child_process` launch Git via managed PATH; imports and resource files work. **Verify:** Android runtime tests. **Depends on:** T11 for source-build implementation; T15 for Android acceptance.
 
 **T19 — Import/update hardening.** Verify archive authenticity policy, ownership, atomicity/recovery, path escapes and shared-UID risk. **Acceptance:** no outstanding critical exploit paths in defined importer model; rollback tests PASS. **Verify:** negative fixtures + threat review. **Depends on:** T14,T17,T18.
 
@@ -85,30 +85,24 @@ Tasks are scoped so a future agent can implement and verify each task in a focus
 
 **T21 — Release-readiness decision.** Review all tests, ADRs, licenses, missing features, provenance and unsupported cases. **Acceptance:** decision marked READY / NOT READY with evidence, not assumptions. **Verify:** gate checklist and release candidate audit. **Depends on:** T20.
 
-## 4. Vertical slice and parallel work
+## 4. Dependency order and parallel work
 
 ```text
-T01,T02
-   |
-T03 -> T04 -> T05 -> T06 -----------+
-   |                                 |
-   +-> T12 (UI can begin)            |
-                                     v
-                        T07 -> T08 -> T09 -> T10 -> T11
-                                      |           |
-                                      +-> T13 -> T14 -> T15
-                                                        |
-                                          +-------------+------+
-                                          v                    v
-                                       T16,T17                T18
-                                          +----------+---------+
-                                                     v
-                                                T19 -> T20 -> T21
+Foundation:    T01/T02 → T03 E0/E1 → T04 E2 fixture → T05 child fixture
+Contract:      T01 + T03 → T07 → T08 → T09 → T10 → T11 CI
+Terminal:      T01 → T12 UI; T03 + T07 + T12 → T13 PTY
+Bootstrap:     T07 + T10 + T13 → T14 → T15 Android acceptance
+Core builder:  T09 + T10 → T16 Git/OpenSSH source builds
+Core device:   T15 + T16 + Android E2 → T17 GH → Git → SSH real E3
+Runtimes:      T11 → T18 Python/Node source builds; T15 → runtime tests
+Release:       T14 + T17 + T18 → T19 → T20 → T21
 ```
 
-Graph is illustrative; where task numbers permit parallel work, dependencies in each task description take precedence. The smallest meaningful vertical delivery is **an installed app opening source-built Bash and running one nested child**. It outranks building a catalog of packages without an execution proof.
+Task-level acceptance requirements take precedence over the simplified diagram. **Fixture E0/E1 and E2 tests are not E3.** The first real nested GH → Git → SSH acceptance requires the actual source-built packages and Android app. Builder recipes and UI may progress while device-specific results remain pending; final architecture approval and release may not.
 
-## 5. Files likely to be created during future implementation
+**Merged baseline (4 November 2026):** PRs #1, #2 and #3 have been merged into `main`. The nine-package Bash/OpenSSH/Git source-build closure, bundled terminal and automated host/build jobs exist. Device-side E2, Android app acceptance, E3, Python/Node and release gates remain open; see [EXECUTION_STATUS.md](EXECUTION_STATUS.md).
+
+## 5. Implemented repository boundaries
 
 ```text
 termux-pro-builder/       toolchain/source locks, recipes, scripts, tests, CI
@@ -116,7 +110,7 @@ termux-pro-app/           Android Gradle app, terminal/PTY, native launch proof
 shared/                  package schema + conformance fixtures if both projects share source
 ```
 
-These are **future repository boundaries**, not deliverables created in the documentation phase. Exact modules and source filenames are intentionally deferred until task implementation to avoid fiction disguised as precision. Specified interface names such as `./build.sh build bash` are normative proposed CLI requirements from [BUILDER_SPEC.md](BUILDER_SPEC.md), not existing commands.
+These modules and the `./build.sh` entry point now exist. Their presence proves implementation, not Android runtime compatibility. All new packages must continue to comply with the shared package contract and release acceptance gates.
 
 ## 6. Deliberately postponed work (Ponytail)
 
@@ -136,7 +130,7 @@ These are **future repository boundaries**, not deliverables created in the docu
 5. No unreviewed critical security/regression defect or bypass of signed package integrity rules.
 6. No unnecessary abstraction survives final review when simpler platform or upstream functionality exists.
 
-## 8. Documentation-phase exit criteria
+## 8. Historical documentation-phase exit criteria
 
 - [x] Seven Markdown files with cross-links and defined ownership.
 - [x] Single shared package/command contract documented; app and builder defer to it.

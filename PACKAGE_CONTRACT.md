@@ -4,6 +4,15 @@
 **Source:** requirements derived from the attached Termux Pro Architecture Report; Android/Termux-specific changes are research-backed proposals as recorded in [ARCHITECTURE.md](ARCHITECTURE.md).  
 **Reference registry:** [README.md](README.md#evidence-register).
 
+## Implemented v1 carrier and acceptance boundary — 4 November 2026
+
+The v1 candidate is a bounded ZIP-based `.tpkg` with `manifest.json` and hash-inventoried `payload/` regular files. `shared/contract.py` produces and validates it; the Android `PackageContract` / `SafeZip` consumer performs the corresponding checks. The CI-validated nine-package closure comprises Bash, ncurses, readline, zlib, OpenSSL, OpenSSH clients, CA certificates, curl and Git. `bootstrap.zip` contains an external index and exact embedded packages; its hash is embedded in the candidate APK. Actual Android package loading and transaction recovery are **NOT RUN**.
+
+The contract currently fixes `arm64-v8a`, API >= 30, application ID `com.anthracitelabs.termuxpro`, and the primary-user `/data/user/0/com.anthracitelabs.termuxpro/files/usr` prefix. A known Android path alias may be normalized for equivalent private-directory identity, but different Android users, malicious symlinks and foreign prefixes remain rejected. Per-package native target executables are deliberately not directly executed from writable storage; managed command entries use the protected launcher candidate. Script-command support and remote native package delivery are **not** enabled.
+
+The original E1 hypothesis passed on one recorded OPPO proof fixture; this does not confer a device PASS on the current terminal implementation or final E2/E3 command contract. No release signature or general ABI/OEM/16 KB compatibility is asserted.
+
+
 ## 1. One contract, two consumers
 
 | Plain language | Technical meaning |

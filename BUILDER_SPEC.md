@@ -1,9 +1,18 @@
 # Termux Pro Builder — Implementation Specification
 
-**Status:** documentation contract; not implemented.  
+**Status:** implemented source-builder candidate on `main`; **release acceptance is incomplete**. See [EXECUTION_STATUS.md](EXECUTION_STATUS.md).
 **Owner:** Termux Pro Builder project.  
 **Inputs/outputs contract:** [PACKAGE_CONTRACT.md](PACKAGE_CONTRACT.md).  
 **Upstream references:** Termux package recipes [S4], build workflow [S5], Android NDK [S7], prefix configuration [S18] (URLs in [README](README.md#evidence-register)).
+
+## Implementation alignment — merged checkpoint, 4 November 2026
+
+The standalone `termux-pro-builder/` is operational for **nine source-built Android ARM64 packages**: ncurses, readline, Bash, zlib, OpenSSL, OpenSSH client, CA certificates, curl and Git. `./build.sh bootstrap bash openssh git` constructs one dependency closure and candidate `.tpkg` archives plus `bootstrap.zip` and corresponding-source bundle. GitHub Actions at PR #3 head `27e445b` completed all four jobs, including strict Python and production Java package consumers and packaging the same-run bootstrap into a terminal APK ([verified CI](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41769436863)).
+
+Existing implementations enforce pinned source digests, signer identities where upstream detached signatures exist, zero-fuzz patches, fixed Android identity/prefix, ELF/DT_NEEDED/SONAME/RUNPATH checks, and package inventory. CA certificate input has a pinned hash/license but no upstream detached signature; upstream zlib has a legacy DSA/SHA-1 signature limitation. No opaque prebuilt Android target packages are used. An immutable host-image digest, release signing, license/security/policy sign-off, and full Android runtime checks remain open. Build/static PASS does **not** mean the Git/OpenSSH/Bash packages run on Android. Python, Node.js and GH are not implemented.
+
+Do not weaken the original requirements to match this candidate implementation. Complete release gates before using the `release` entry point.
+
 
 ## 1. Mission
 

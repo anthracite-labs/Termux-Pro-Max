@@ -3,6 +3,15 @@
 **State:** candidate implementation; E0/E1 fixture evidence on one OPPO device is recorded in [verification](VERIFICATION.md); E2/E3 remain unverified.
 **Related:** [README](README.md) · [Builder](BUILDER_SPEC.md) · [App](ANDROID_APP_SPEC.md) · [Package contract](PACKAGE_CONTRACT.md) · [Tests](VERIFICATION.md).
 
+## Merged implementation state — 4 November 2026
+
+PRs #1 → #2 → #3 were merged sequentially into `main`, establishing an experimental E0/E1/E2 proof harness, the separate source builder and Android terminal candidate, and the nine-package Bash/OpenSSH/Git bootstrap. This is **implementation**, not acceptance of the entire execution architecture. The only physical-device result is the user-supplied OPPO Android 16/API 36 ARM64/4 KB E0/E1 proof fixture; it is not cryptographically bound to later APKs. E2 dynamic-ELF invocation and actual source-built package loading have not been run on Android. Real E3 (GH → Git → SSH) is impossible until GH is built and device-tested.
+
+**ADR-004 remains a candidate.** Its final decision depends on Android E2 and real E3 (and their negative/compatibility tests), not simply successful Linux host tests or APK compilation. Builder source builds and UI/installer code may advance while that decision is pending; no additional unproven launcher or custom loader should be introduced as a workaround.
+
+The implementation follows ADR-001/002/003's separation: source recipes create shared-contract packages; the app verifies and installs bundled packages then manages command links. The current supported internal identity is `com.anthracitelabs.termuxpro` with a compiled ARM64 primary-user prefix. Additional Android profiles, page sizes and Play distribution require independent validation.
+
+
 ## 1. Responsibility map
 
 | Plain language | Technical responsibility | Owner |
