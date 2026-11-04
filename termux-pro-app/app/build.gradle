@@ -1,0 +1,48 @@
+plugins { id 'com.android.application' }
+def target = new groovy.json.JsonSlurper().parse(file('../../shared/target.json'))
+def bootstrapDir = providers.environmentVariable('TP_BOOTSTRAP_DIR').orElse(file('../../termux-pro-builder/output').absolutePath)
+android {
+    namespace 'com.anthracitelabs.termuxpro'
+    compileSdk target.target_android_api
+    buildToolsVersion '36.0.0'
+    ndkVersion '28.2.13676358'
+    defaultConfig {
+        applicationId target.application_id
+        minSdk target.min_android_api
+        targetSdk target.target_android_api
+        versionCode 2
+        versionName '0.2-internal'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        ndk { abiFilters 'arm64-v8a' }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    sourceSets.main.jniLibs.srcDir layout.buildDirectory.dir('generated/jniLibs')
+    sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/bootstrapAssets')
+    packaging.jniLibs {
+        useLegacyPackaging = true
+        keepDebugSymbols += ['**/libtp-*.so']
+    }
+}
+dependencies {
+    implementation project(':terminal-view')
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+}
+def nativeApp = tasks.register('compileNativeApp', Exec) {
+    inputs.files(fileTree('native'), fileTree('../../shared/native'), file('../../shared/target.json'), file('build-native.sh'))
+    outputs.dir(layout.buildDirectory.dir('generated/jniLibs'))
+    commandLine 'bash', file('build-native.sh'), new File(android.sdkDirectory, "ndk/${android.ndkVersion}"),
+        layout.buildDirectory.dir('generated/jniLibs').get().asFile
+}
+def bootstrapAssets = tasks.register('stageBootstrap', Exec) {
+    // Record the current checkout/dirty state on every APK assembly.
+    outputs.upToDateWhen { false }
+    inputs.files(new File(bootstrapDir.get(), 'bootstrap.zip'), new File(bootstrapDir.get(), 'bootstrap.sha256'), file('../../shared/target.json'), file('stage-bootstrap.py'), fileTree('../vendor') { include '*.md', '*.txt' })
+    outputs.dir(layout.buildDirectory.dir('generated/bootstrapAssets'))
+    commandLine 'python3', file('stage-bootstrap.py'), bootstrapDir.get(),
+        layout.buildDirectory.dir('generated/bootstrapAssets').get().asFile
+}
+tasks.named('preBuild').configure { dependsOn nativeApp, bootstrapAssets }

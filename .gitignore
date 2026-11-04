@@ -3,3 +3,5 @@
 local.properties
 __pycache__/
 *.pyc
+termux-pro-builder/output/
+termux-pro-builder/cache/

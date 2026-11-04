@@ -1,0 +1,8 @@
+{
+  "id": "readline",
+  "dependencies": [
+    "ncurses"
+  ],
+  "commands": [],
+  "patches": []
+}

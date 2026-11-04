@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "backend": "reviewed GNU configure/make recipes (no Termux package binaries or package-manager fetches)",
+  "ndk_revision": "28.2.13676358",
+  "clang_sha256": "6156dd4e5e466333197a00b8d20bca72c292186643b749dcaaa3aa9164afb1de",
+  "ndk_archive_url": "https://dl.google.com/android/repository/android-ndk-r28c-linux.zip",
+  "signer_keyring_sha256": "10ad5d10aec85398df9deef552b551479ac2adebcf2825c25f4fbfcd6dfa143e",
+  "termux_porting_reference": "1d36a62274ef62cb123788b2b20956f75bbcb92b",
+  "host_os": "Linux x86_64",
+  "host_image_digest": null,
+  "release_note": "A pinned host image digest and current security review are required before release; experimental local/CI builds record host tool versions.",
+  "ndk_archive_checksum": {
+    "algorithm": "sha1",
+    "value": "a7b54a5de87fecd125a17d54f73c446199e72a64",
+    "source": "https://dl.google.com/android/repository/repository2-3.xml"
+  }
+}

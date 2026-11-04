@@ -68,3 +68,37 @@ The same helper/fixture passes a Linux explicit-linker regression with Linux
 machine/interpreter constants substituted at compile time. NDK arm64 ELF/static
 and APK checks pass. Neither is an Android E2 acceptance result. Save the new
 APK/source hash and actual `e2-proof.log` before attributing a device result.
+
+## Terminal candidate (beyond the execution experiment)
+
+`:app` is the single-session terminal candidate. It bundles the builder's actual
+source-built Bash/ncurses/readline bootstrap, validates ZIP/package/ELF metadata,
+stages a transaction with crash rollback and keeps HOME outside the prefix. The
+managed launcher uses the proposed system-linker route; Android acceptance is
+pending. Only pinned Apache terminal rendering modules are reused; provenance,
+changes and notices are in vendor/README.md. No Termux app or binary package is
+used. No remote native package download is implemented.
+
+Build the source bootstrap first, then the APK and real-device test APK:
+
+```sh
+../termux-pro-builder/build.sh bootstrap
+./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug
+ci/run-terminal-acceptance.sh app/build/outputs/apk/debug/app-debug.apk \
+    app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+```
+
+The last command requires a connected ARM64 Android device with SELinux Enforcing;
+use ANDROID_SERIAL if needed. It runs a bounded instrumentation test against the
+installed APK and writes actual logs/results under build/evidence/terminal-device.
+It does not substitute for the separate E2 proof or real GH/Git/SSH E3. It checks
+Bash version, a real TTY, managed child arguments, pipe/background wait, resize,
+Ctrl+C, Unicode/ANSI text and close/reap. Rotation, full job control, screen-reader
+and keyboard usability still need explicit device coverage. Never count compilation
+of the test APK as a passing device run.
+
+GitHub Actions publishes `termux-pro-apk` (app plus instrumentation APK, checksums,
+source revision and bootstrap digest), separately from `termux-pro-proof-apk`.
+Both variants currently use the same application ID and signing key type; they
+replace each other. Android debug downgrades may require `adb install -r -d`.
+Do not uninstall to switch if you want to preserve app data/HOME.

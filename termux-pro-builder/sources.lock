@@ -1,0 +1,35 @@
+{
+  "ncurses": {
+    "version": "6.5",
+    "upstream": "https://ftp.gnu.org/gnu/ncurses/",
+    "url": "https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz",
+    "revision": "6.5",
+    "sha256": "136d91bc269a9a5785e5f9e980bc76ab57428f604ce3e5a5a90cebc767971cc6",
+    "signature_url": "https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz.sig",
+    "signature_sha256": "1c630a12c9ee6a6eb3905608dd438e567c831d28ab8d28242d95bb77c3627469",
+    "signer": "19882D92DDA4C400C22C0D56CC2AF4472167BE03",
+    "license": "MIT"
+  },
+  "readline": {
+    "version": "8.2",
+    "upstream": "https://ftp.gnu.org/gnu/readline/",
+    "url": "https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz",
+    "revision": "8.2",
+    "sha256": "3feb7171f16a84ee82ca18a36d7b9be109a52c04f492a053331d7d1095007c35",
+    "signature_url": "https://ftp.gnu.org/gnu/readline/readline-8.2.tar.gz.sig",
+    "signature_sha256": "fcc0410d241cdf7a4b31f4babe2cc3e67f46b9d4912812d32e2d093afbe58a1a",
+    "signer": "7C0135FB088AAF6C66C650B9BB5869F064EA74AB",
+    "license": "GPL-3.0-or-later"
+  },
+  "bash": {
+    "version": "5.2.37",
+    "upstream": "https://ftp.gnu.org/gnu/bash/",
+    "url": "https://ftp.gnu.org/gnu/bash/bash-5.2.37.tar.gz",
+    "revision": "5.2.37",
+    "sha256": "9599b22ecd1d5787ad7d3b7bf0c59f312b3396d1e281175dd1f8a4014da621ff",
+    "signature_url": "https://ftp.gnu.org/gnu/bash/bash-5.2.37.tar.gz.sig",
+    "signature_sha256": "f6498d2cd21061c271302f09065a32a5c52aa79584511d84e29b45ce493a69f4",
+    "signer": "7C0135FB088AAF6C66C650B9BB5869F064EA74AB",
+    "license": "GPL-3.0-or-later"
+  }
+}

@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Termux Pro</string>
+    <string name="preview">Termux Pro · internal preview</string>
+    <string name="preparing">Verifying bundled shell…</string>
+    <string name="terminal_description">Terminal session. Enter commands with the keyboard.</string>
+    <string name="escape_key">Esc</string>
+    <string name="tab_key">Tab</string>
+    <string name="interrupt_key">Ctrl+C</string>
+    <string name="suspend_key">Ctrl+Z</string>
+    <string name="keyboard">Keyboard</string>
+    <string name="close_session">Close session</string>
+    <string name="new_session">New session</string>
+    <string name="repair">Repair bundled shell (preserves HOME)</string>
+    <string name="clipboard_label">Terminal selection</string>
+    <string name="shell_exited">Shell exited (%1$d)</string>
+</resources>

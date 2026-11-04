@@ -145,4 +145,4 @@ No platform-wide promise of indefinite background execution. Android background 
 - [ ] Screen-reader/keyboard interaction and UI failure states are tested before production release.
 - [ ] Distribution/policy approval exists for the exact Play release feature set; no blanket assumption that native package downloads are allowed.
 
-**No implementation is included.** Specific Android APIs, native packaging flags and build commands will be frozen after source-backed proof, then recorded in [ARCHITECTURE.md](ARCHITECTURE.md) and the [implementation plan](IMPLEMENTATION_PLAN.md).
+**Implementation update:** the candidate terminal, native PTY, shared-contract bootstrap consumer and physical-device acceptance harness are implemented. Build/host results are in [EXECUTION_STATUS.md](EXECUTION_STATUS.md). Android runtime acceptance remains pending; the architecture gates are not bypassed.

@@ -2,7 +2,7 @@ name: Execution proof
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feature/execution-proof]
   push:
     branches: [main]
 
@@ -31,7 +31,7 @@ jobs:
           } > termux-pro-app/build/evidence/host-environment.log 2>&1
       - name: Check shell syntax and patch whitespace
         run: |
-          for script in termux-pro-app/gradlew termux-pro-app/proof/build-native.sh termux-pro-app/run-device-proof.sh termux-pro-app/ci/*.sh; do
+          for script in termux-pro-app/gradlew termux-pro-app/proof/build-native.sh termux-pro-app/app/build-native.sh termux-pro-app/run-device-proof.sh termux-pro-app/ci/*.sh termux-pro-builder/build.sh termux-pro-builder/recipes/*.sh; do
             bash -n "$script"
           done
           git diff --check HEAD^ HEAD
@@ -40,6 +40,7 @@ jobs:
           set -o pipefail
           python3 -m unittest discover -s termux-pro-app/tests -v 2>&1 | tee termux-pro-app/build/evidence/host-tests.log
           python3 -m unittest discover -s shared/tests -v 2>&1 | tee termux-pro-app/build/evidence/shared-tests.log
+          python3 -m unittest discover -s termux-pro-builder/tests -v 2>&1 | tee termux-pro-app/build/evidence/builder-tests.log
       - name: Preserve host evidence, including failures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -101,4 +102,112 @@ jobs:
           path: |
             termux-pro-app/build/evidence/apk/
             termux-pro-app/proof/build/reports/lint-results-debug.*
+          retention-days: 14
+
+  source-builder:
+    needs: host-proof
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install GNU host build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential patch gnupg ncurses-bin python3
+      - name: Install the fixed NDK
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          cmdline-tools-version: '13114758'
+          log-accepted-android-sdk-licenses: false
+          packages: ndk;28.2.13676358
+      - name: Compile and verify source-only bootstrap
+        run: |
+          set -o pipefail
+          mkdir -p termux-pro-builder/output
+          ./termux-pro-builder/build.sh doctor > termux-pro-builder/output/doctor.log
+          ./termux-pro-builder/build.sh bootstrap 2>&1 | tee termux-pro-builder/output/build.log
+          ./termux-pro-builder/build.sh test bash | tee termux-pro-builder/output/bash-static.json
+          git rev-parse HEAD > termux-pro-builder/output/source-revision.txt
+          test -z "$(git status --porcelain)"
+      - name: Publish candidate bootstrap and corresponding source
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: termux-pro-source-bootstrap
+          path: |
+            termux-pro-builder/output/bootstrap.zip
+            termux-pro-builder/output/bootstrap.sha256
+            termux-pro-builder/output/sources.zip
+            termux-pro-builder/output/sources.sha256
+            termux-pro-builder/output/source-revision.txt
+            termux-pro-builder/output/packages/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve source build and verification logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: termux-pro-source-build-logs
+          path: |
+            termux-pro-builder/output/*.log
+            termux-pro-builder/output/*.json
+            termux-pro-builder/output/logs/
+          retention-days: 14
+      - name: Record actual gate scope
+        if: always()
+        run: |
+          echo 'Source build/static checks are candidates. Android E2/E3 and source-built package runtime acceptance: NOT RUN.' >> "$GITHUB_STEP_SUMMARY"
+
+  terminal-apk:
+    needs: source-builder
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '21.0.9+10.0.LTS'
+      - name: Install the fixed Android build tools
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
+        with:
+          cmdline-tools-version: '13114758'
+          log-accepted-android-sdk-licenses: false
+          packages: platform-tools platforms;android-36 build-tools;36.0.0 ndk;28.2.13676358
+      - name: Obtain this run's source-built bootstrap
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: termux-pro-source-bootstrap
+          path: termux-pro-builder/output
+      - name: Build and lint terminal with bundled Bash
+        working-directory: termux-pro-app
+        run: |
+          set -o pipefail
+          mkdir -p build/evidence/terminal
+          ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug 2>&1 | tee build/evidence/terminal/build.log
+          mkdir -p build/terminal-apk
+          cp app/build/outputs/apk/debug/app-debug.apk build/terminal-apk/termux-pro-debug.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk build/terminal-apk/termux-pro-test.apk
+          git rev-parse HEAD > build/terminal-apk/source-revision.txt
+          cp app/build/generated/bootstrapAssets/build.json build/terminal-apk/
+          cd build/terminal-apk
+          sha256sum termux-pro-debug.apk termux-pro-test.apk > SHA256SUMS
+      - name: Publish the terminal candidate APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: termux-pro-apk
+          path: termux-pro-app/build/terminal-apk/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve terminal build and lint evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: termux-pro-terminal-build-logs
+          path: |
+            termux-pro-app/build/evidence/terminal/
+            termux-pro-app/app/build/reports/lint-results-debug.*
           retention-days: 14
