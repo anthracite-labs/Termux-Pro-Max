@@ -246,6 +246,41 @@ jobs:
             termux-pro-app/app/build/reports/lint-results-debug.*
           retention-days: 14
 
+  emulator-smoke:
+    needs: terminal-apk
+    runs-on: macos-26-intel
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: termux-pro-apk-candidate
+          path: termux-pro-app/build/terminal-apk
+      - name: Verify APK checksums
+        working-directory: termux-pro-app/build/terminal-apk
+        run: shasum -a 256 -c SHA256SUMS
+      - name: Launch APK on Android 16 emulator (translated ARM64)
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash termux-pro-app/ci/run-emulator-startup.sh termux-pro-app/build/terminal-apk/termux-pro-debug.apk termux-pro-app/build/terminal-apk/termux-pro-test.apk
+      - name: Record emulator-only test scope
+        if: always()
+        run: echo 'Emulator launch smoke uses x86_64 Google APIs with ARM64 native translation; physical ARM64 E2/E3 and Bash/PTY acceptance remain separate.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve emulator failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: termux-pro-emulator-evidence
+          path: termux-pro-app/build/evidence/emulator/
+          retention-days: 14
+
   device-test:
     if: github.event_name == 'workflow_dispatch' && inputs.run_device
     needs: terminal-apk
