@@ -474,3 +474,8 @@ fixed without changing production PTY behavior. Both original Git hashing issues
 have narrowly documented false-positive review dispositions. The final-head CI
 and analysis are reported on PR #8. Android E2, terminal device acceptance
 and real E3 remain NOT RUN; original OPPO E0/E1 evidence scope is unchanged.
+
+Strict clean-runner Gradle verification also identified two missing parent/BOM
+metadata pins from warm-cache generation. Both were independently checked and
+added; strict APK assembly/lint then passed with a fresh local dependency cache.
+Final-head CI and Sonar results remain distinct from local verification.

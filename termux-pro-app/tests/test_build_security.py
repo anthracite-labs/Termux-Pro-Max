@@ -28,6 +28,9 @@ class BuildSecurity(unittest.TestCase):
         self.assertFalse(verification.findall('.//v:trusted-artifacts', ns))
         artifacts = verification.findall('.//v:artifact', ns)
         self.assertTrue(artifacts)
+        # Warm-cache generation can omit parents/BOM variants needed on clean CI.
+        names = {artifact.get('name') for artifact in artifacts}
+        self.assertTrue({'guava-parent-33.3.1-jre.pom', 'junit-bom-5.10.2.module'} <= names)
         for artifact in artifacts:
             digests = artifact.findall('v:sha256', ns)
             self.assertEqual(len(digests), 1, artifact.get('name'))

@@ -84,13 +84,13 @@ operations and does not accept SHA-1 as an integrity primitive.
 AGP 8.10.1, Gradle 8.11.1, JDK 21.0.9+10, Android SDK 36 and NDK
 28.2.13676358 remain unchanged. Lockfiles cover the root plugin classpath and
 all four Android modules, including instrumentation dependencies. Wrapper
-distribution SHA-256 was already pinned. Verification metadata covers 375
+distribution SHA-256 was already pinned. Verification metadata covers 377
 artifact/metadata files using SHA-256, with metadata verification enabled and
 no trusted-artifact bypass. Existing resolved versions were retained.
 
-After generating candidate metadata, all 375 files (219,721,149 bytes) were
+After generating candidate metadata, all 377 files (219,748,350 bytes) were
 independently streamed again from official Google Maven or Maven Central HTTPS
-repositories and compared with every SHA-256 pin: **375 matched, 0 mismatches**.
+repositories and compared with every SHA-256 pin: **377 matched, 0 mismatches**.
 Each verification entry records its exact checked publisher URL. This is
 TLS/publisher and reviewed-pin trust, not a claim of upstream PGP verification
 or vulnerability-free dependencies. Gradle artifact signature verification is
@@ -201,6 +201,37 @@ original five-second deadline, still requires an actual foreground `sleep`,
 then checks Ctrl+C status 130 and shell reaping. The full 34-test app suite
 passes, including this regression. Production PTY/Android code is unchanged;
 the final-head CI reruns all required jobs rather than treating skips as passes.
+
+The next [CI run](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41815872709)
+passed host tests but correctly failed strict Gradle verification for two missing
+metadata entries: `guava-parent-33.3.1-jre.pom` and `junit-bom-5.10.2.module`.
+The initial warm-cache generation had not recorded them. Both were independently
+downloaded from Maven Central, SHA-256 checked and added, without changing any
+resolved version or relaxing metadata verification. A focused regression now
+requires these clean-resolution inputs. Fresh-cache local validation passed;
+final-head CI is checked separately on PR #8. Original caches remain preserved.
+
+With an initially empty dependency cache, strict local app, instrumentation and
+proof APK builds and lint completed successfully in 2m 4s. Only the already
+SHA-256-pinned Gradle distribution was reused; dependencies/metadata were fetched
+again. The separate cache is preserved in the directory recorded by
+`/workspace/sonar-remediation-evidence/fresh-gradle-home.txt`. Exact invocation:
+
+```bash
+fresh_gradle_home=$(mktemp -d /dev/shm/termux-sonar-gradle.XXXXXX)
+ln -s /workspace/android-tools/gradle-home/wrapper "$fresh_gradle_home/wrapper"
+GRADLE_USER_HOME="$fresh_gradle_home" ./termux-pro-app/gradlew --no-daemon \
+  -p termux-pro-app -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts \
+  -Dhttps.proxyHost=proxy -Dhttps.proxyPort=8080 \
+  -Dhttp.proxyHost=proxy -Dhttp.proxyPort=8080 --dependency-verification strict \
+  :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug \
+  :proof:assembleDebug :proof:lintDebug
+```
+
+`aapt2 dump xmltree <app-or-proof.apk> --file AndroidManifest.xml` also confirms
+both compiled APK manifests retain `com.anthracitelabs.termuxpro`, min SDK 30,
+target SDK 36 and `usesCleartextTraffic=false`. This is static APK inspection,
+not Android network or application execution evidence.
 
 Sonar dependency-risk analysis was attempted but Advanced Security is not
 enabled for this organization; dependency vulnerability coverage was **not
