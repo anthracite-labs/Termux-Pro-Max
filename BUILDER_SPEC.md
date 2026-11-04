@@ -1,6 +1,6 @@
 # Termux Pro Builder — Implementation Specification
 
-**Status:** implemented source-builder candidate on `main`; **release acceptance is incomplete**. See [EXECUTION_STATUS.md](EXECUTION_STATUS.md).  
+**Status:** implemented source-builder candidate on `main`; **release acceptance is incomplete**. See [EXECUTION_STATUS.md](EXECUTION_STATUS.md).
 **Owner:** Termux Pro Builder project.  
 **Inputs/outputs contract:** [PACKAGE_CONTRACT.md](PACKAGE_CONTRACT.md).  
 **Upstream references:** Termux package recipes [S4], build workflow [S5], Android NDK [S7], prefix configuration [S18] (URLs in [README](README.md#evidence-register)).
