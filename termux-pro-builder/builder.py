@@ -46,13 +46,20 @@ def fetch(url, path, digest):
     path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists():
         partial = path.with_suffix(path.suffix + '.partial')
-        try:
-            with urllib.request.urlopen(url, timeout=90) as source, open(partial, 'wb') as output:
-                shutil.copyfileobj(source, output)
-            check_hash(partial, digest)
-            partial.replace(path)
-        finally:
-            partial.unlink(missing_ok=True)
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(url, timeout=90) as source, open(partial, 'wb') as output:
+                    shutil.copyfileobj(source, output)
+                try:
+                    check_hash(partial, digest)
+                except ValueError:
+                    if attempt == 2:
+                        raise
+                    continue
+                partial.replace(path)
+                break
+            finally:
+                partial.unlink(missing_ok=True)
     check_hash(path, digest)
     return path
 
