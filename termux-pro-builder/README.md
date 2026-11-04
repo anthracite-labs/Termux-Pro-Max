@@ -67,11 +67,10 @@ publish a package containing only documentation/licenses.
 
 The OpenSSH client binaries ssh/ssh-keygen/ssh-keyscan compile and link after
 narrow Bionic compatibility patches. Their ELF ABI/alignment/RUNPATH checks pass.
-**OpenSSH packaging is not yet accepted:** source-location strings still contain
-host workspace paths, which the package verifier rejects. The next change must
-map source filenames during compilation, then run the complete clean CLI closure
-and Java package-consumer checks. Do not weaken the host-path validator or call
-this a passing Android SSH result. Client-only staging omits a daemon, privileged
+**OpenSSH packaging now passes a clean CLI build:** source filenames are mapped
+during compilation and host-path checks stay enforced. The complete dependency
+closure and Java package-consumer static checks pass. This is not a passing
+Android SSH result. Client-only staging omits a daemon, privileged
 helpers and host keys. HOME and DNS adaptations still require real Android tests.
 
 Five builder unit tests pass, including required-runtime-output and signer/status

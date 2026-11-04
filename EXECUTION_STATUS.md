@@ -146,3 +146,12 @@ OpenSSH clients compile/link with narrow Bionic HOME, sentinel, bzero and resolv
 adaptations, but their embedded host source filenames still need remapping before
 package verification can pass. Five builder unit tests pass. No Android SSH, Git,
 GH, E2 or E3 pass is claimed. Git/GH/Python/Node and release gates remain open.
+
+### OpenSSH clean-build result
+
+A complete clean CLI build now passes for zlib 1.3.2, OpenSSL 3.5.9 and the
+OpenSSH 10.6p1 client package. Source filenames are mapped during OpenSSH compile;
+the host-path verifier remains enforced. All three package static checks and the
+OpenSSH dependency check pass; the production Java consumer also accepts the
+six-package local Bash-plus-SSH closure. Android SSH/runtime acceptance is NOT RUN.
+Git/GH/real E3 and Python/Node remain outstanding.

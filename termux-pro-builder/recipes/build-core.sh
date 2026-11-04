@@ -36,6 +36,7 @@ case "$TP_PACKAGE" in
         rm -rf "$stage_dir$prefix/etc/tls/misc"
         ;;
     openssh)
+        export CFLAGS="$CFLAGS -ffile-prefix-map=$source_dir=openssh-source"
         # Bionic supplies bzero as a header macro, so a symbol-only Autoconf probe misses it.
         printf '#include <strings.h>\nint main(void) { char b[1]; bzero(b, 1); return b[0]; }\n' | "$CC" -x c - -o bzero-probe
         export ac_cv_func_bzero=yes
