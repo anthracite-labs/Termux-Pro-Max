@@ -9,6 +9,8 @@ collect() {
     trap - EXIT
     adb logcat -d -v threadtime > "$evidence/logcat.log" 2>&1 || true
     adb shell dumpsys activity activities > "$evidence/activities.log" 2>&1 || true
+    adb shell dumpsys window > "$evidence/window.log" 2>&1 || true
+    adb shell dumpsys input_method > "$evidence/input-method.log" 2>&1 || true
     adb exec-out screencap -p > "$evidence/screen.png" 2>/dev/null || true
     exit "$result"
 }
@@ -25,6 +27,7 @@ adb install -r "$test_apk"
 # The GitHub runner exposes a hardware keyboard; still exercise the software IME.
 adb shell settings put secure show_ime_with_hard_keyboard 1
 adb shell ime list -s > "$evidence/input-methods.txt"
+adb shell settings get secure default_input_method > "$evidence/default-ime.txt"
 test -s "$evidence/input-methods.txt"
 adb logcat -c
 adb shell am force-stop com.anthracitelabs.termuxpro
