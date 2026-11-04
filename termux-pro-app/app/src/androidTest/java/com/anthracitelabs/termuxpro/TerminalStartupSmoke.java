@@ -35,6 +35,18 @@ public final class TerminalStartupSmoke {
         var app = (TerminalApp) instrumentation.getTargetContext().getApplicationContext();
         var activity = (TerminalActivity) instrumentation.startActivitySync(
             new Intent(app, TerminalActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        // startActivitySync does not guarantee foreground window focus. An emulator
+        // with a system ANR dialog cannot display our keyboard, regardless of app code.
+        AtomicBoolean windowFocused = new AtomicBoolean();
+        long deadline = SystemClock.elapsedRealtime() + 20000;
+        while (SystemClock.elapsedRealtime() < deadline) {
+            instrumentation.runOnMainSync(() -> windowFocused.set(
+                activity.terminal.isAttachedToWindow() && activity.getWindow().getDecorView().hasWindowFocus()));
+            if (windowFocused.get()) break;
+            Thread.sleep(100);
+        }
+        assertTrue("Android did not focus Termux Pro window (system ANR/overlay); IME test inconclusive",
+            windowFocused.get());
         AtomicBoolean focused = new AtomicBoolean();
         instrumentation.runOnMainSync(() -> {
             assertTrue("Terminal must be focusable in touch mode", activity.terminal.isFocusableInTouchMode());
@@ -43,7 +55,7 @@ public final class TerminalStartupSmoke {
         });
         assertTrue("Keyboard request did not focus terminal", focused.get());
         AtomicBoolean visible = new AtomicBoolean();
-        long deadline = SystemClock.elapsedRealtime() + 10000;
+        deadline = SystemClock.elapsedRealtime() + 10000;
         while (SystemClock.elapsedRealtime() < deadline) {
             instrumentation.runOnMainSync(() -> {
                 WindowInsets insets = activity.terminal.getRootWindowInsets();
