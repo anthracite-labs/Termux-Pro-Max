@@ -24,6 +24,7 @@ the NDK itself. `shared/target.json` fixes app identity, ABI, API and prefix.
 ./build.sh test bash
 ./build.sh verify output/packages/bash-5.2.37.tpkg
 ./build.sh bootstrap
+./build.sh bootstrap bash openssh # combined candidate closure, compiled once
 ./build.sh source-offer # regenerate corresponding source without recompiling
 ```
 
@@ -77,3 +78,7 @@ Five builder unit tests pass, including required-runtime-output and signer/statu
 negative cases. Machine signature status is now separate from human diagnostics;
 non-UTF-8 key display text cannot break decoding or satisfy the signer check.
 `source-offer openssh` selects that source closure without compiling it.
+
+Ubuntu CI now selects the combined Bash/OpenSSH closure and runs both Python and
+Java package consumers before bundling it into the terminal APK. Passing CI and
+actual Android execution remain distinct gates.

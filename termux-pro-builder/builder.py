@@ -169,7 +169,10 @@ def package(name, source, recipe, stage, target, output):
 
 def build(name, sources, recipes, lock, target, cache, output):
     binaries, _ = doctor(lock, target, output)
-    order = plan(name, recipes)
+    requested = [name] if isinstance(name, str) else name
+    order = []
+    for item in requested:
+        order = plan(item, recipes, done=order)
     sysroot = output / 'sysroot'
     # Every requested dependency closure is compiled afresh, including development headers.
     if sysroot.exists():
@@ -306,12 +309,15 @@ def main(args):
         print(json.dumps(doctor(lock, target, output)[1], indent=2))
     elif command == 'build' and len(args) == 2:
         build(args[1], sources, recipes, lock, target, cache, output)
-    elif command == 'bootstrap' and len(args) == 1:
-        order = build('bash', sources, recipes, lock, target, cache, output)
+    elif command == 'bootstrap':
+        order = build(args[1:] or ['bash'], sources, recipes, lock, target, cache, output)
         bootstrap(order, sources, target, output)
         source_offer(order, sources, cache, output)
-    elif command == 'source-offer' and len(args) in {1, 2}:
-        print(source_offer(plan(args[1] if len(args) == 2 else 'bash', recipes), sources, cache, output))
+    elif command == 'source-offer':
+        order = []
+        for name in args[1:] or ['bash']:
+            order = plan(name, recipes, done=order)
+        print(source_offer(order, sources, cache, output))
     elif command in {'verify', 'test'} and len(args) == 2:
         path = Path(args[1]) if command == 'verify' else output / 'packages' / f'{args[1]}-{sources[args[1]]["version"]}.tpkg'
         manifest, payload = contract.load_package(path, target)

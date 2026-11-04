@@ -20,6 +20,8 @@ class Builder(unittest.TestCase):
         recipes = {'bash': {'dependencies': ['readline']},
                    'readline': {'dependencies': ['ncurses']}, 'ncurses': {'dependencies': []}}
         self.assertEqual(builder.plan('bash', recipes), ['ncurses', 'readline', 'bash'])
+        combined = builder.plan('readline', recipes, done=builder.plan('bash', recipes))
+        self.assertEqual(combined, ['ncurses', 'readline', 'bash'])
         recipes['ncurses']['dependencies'] = ['bash']
         with self.assertRaisesRegex(ValueError, 'cycle'):
             builder.plan('bash', recipes)
