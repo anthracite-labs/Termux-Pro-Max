@@ -135,7 +135,10 @@ class Runtime(unittest.TestCase):
             while time.monotonic() < end:
                 foreground = os.tcgetpgrp(fd)
                 comm = Path(f'/proc/{foreground}/comm')
-                if foreground != pid and comm.exists() and comm.read_text().strip() == 'sleep': break
+                try:
+                    if foreground != pid and comm.read_text().strip() == 'sleep': break
+                except FileNotFoundError:
+                    pass  # Child may exit between tcgetpgrp and reading /proc.
                 time.sleep(0.01)
             else: self.fail('sleep never acquired the controlling PTY')
             os.write(fd, b'\x03')
