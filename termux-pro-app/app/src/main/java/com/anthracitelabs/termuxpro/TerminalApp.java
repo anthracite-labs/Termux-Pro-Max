@@ -65,7 +65,8 @@ public final class TerminalApp extends Application implements TerminalSessionCli
                 Files.createDirectories(home);
                 if (!Files.isDirectory(home, LinkOption.NOFOLLOW_LINKS)) throw new IllegalArgumentException("HOME is not a directory");
                 String[] environment = {"HOME=" + home, "PREFIX=" + prefix, "PATH=" + prefix + "/bin:/system/bin",
-                    "TMPDIR=" + prefix + "/tmp", "TERM=xterm-256color", "LANG=C.UTF-8", "COLORTERM=truecolor", "SHELL=" + prefix + "/bin/bash"};
+                    "TMPDIR=" + prefix + "/tmp", "TERM=xterm-256color", "LANG=C.UTF-8", "COLORTERM=truecolor", "SHELL=" + prefix + "/bin/bash",
+                    "SSL_CERT_FILE=" + prefix + "/etc/tls/cert.pem"};
                 main.post(() -> {
                     preparing = false;
                     if (activity.get() == null) return;

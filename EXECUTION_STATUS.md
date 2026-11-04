@@ -11,7 +11,7 @@ while runtime gates are addressed. No release or unrun device test is implied.
 
 **Exact-head verification before merge:** PR #1 `b5f5661` — [two GitHub jobs passed](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41747074287); PR #2 `9320ef1` — [four jobs passed](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41766303775); PR #3 `27e445b` — [four jobs passed](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41769436863). The PR #3 run passed 27 app/native, 6 shared/evidence, 9 builder host regressions; clean Bash/OpenSSH/Git nine-package source build, Python and Java static package-contract checks, proof APK, terminal APK/instrumentation APK builds and lint. Downloadable artifacts: [terminal/test APKs](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41769436863/artifacts/13293689622) and [nine-package bootstrap, packages and corresponding source](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41769436863/artifacts/13294233074). GitHub Actions artifact retention is limited; record independent digests/provenance. These PR results are not automatically checks on the new `main` merge head.
 
-**Builder implemented:** source-built ncurses, readline, Bash, zlib, OpenSSL, OpenSSH (client-only), CA certificates, curl and Git; signed source input verification where available, hashed CA bundle, package inventory, ELF/SONAME/RUNPATH/dependency checks, external-hash ZIP bootstrap and corresponding-source bundle. Source built and static-validated is **not** Android runtime verified. GitHub CLI (GH), Python and Node.js remain unimplemented.
+**Builder implemented:** source-built ncurses, readline, Bash, zlib, OpenSSL, OpenSSH (client-only), CA certificates, curl and Git; signed source input verification where available, hashed CA bundle, package inventory, ELF/SONAME/RUNPATH/dependency checks, external-hash ZIP bootstrap and corresponding-source bundle. Source built and static-validated is **not** Android runtime verified. GH now has a source-built candidate and a real-program Android test route (T17 checkpoint below). Python and Node.js remain unimplemented.
 
 **Android app implemented:** single-session terminal candidate, native PTY, managed protected launcher, archive/ELF/identity validation and transactional bootstrap with crash recovery; the terminal acceptance test now captures TTY status before redirecting its output. Code compiles, but physical Android terminal, E2, Bash/Git/SSH execution, real E3 and full lifecycle/accessibility/16 KB acceptance remain **NOT RUN**.
 
@@ -61,7 +61,7 @@ No universal Android, 16 KB, PTY or real-package compatibility is claimed.
 | T14 bootstrap/install | IMPLEMENTED, Android acceptance pending | Java contract consumer, staging, ownership, journal/rollback, launcher repair and host crash/HOME tests pass |
 | T15 app integration | TEST HARNESS READY, NOT RUN | APK bundles source-built Bash; physical-device instrumentation pending |
 | T16 Git/OpenSSH | IMPLEMENTED, runtime acceptance pending | Git 2.56.0, OpenSSH clients, curl/CA/crypto and Bash nine-package clean source build and Python/Java static closure PASS; Android Git/SSH/HTTPS and child launch NOT RUN |
-| T17 GH/real E3 | PENDING | Source-build GH and record actual GH → Git → SSH execution |
+| T17 GH/real E3 | SOURCE CANDIDATE + ANDROID TEST READY; acceptance pending | GH 2.103.3 / Go 1.27.3 ten-package source build and static consumers PASS; real Android E3 NOT RUN |
 | T18 Python/Node | PENDING | Sources/dependencies, resources and subprocess device probes |
 | T19 importer hardening | PARTIAL | Shared negative archives, central-directory validation, tamper/crash/HOME tests pass on host; broader adversarial/device review pending |
 | T20 compatibility/channel | PENDING | API 30/current API, 16 KB and additional OEM coverage; policy review |
@@ -293,3 +293,189 @@ build outputs and diagnostic evidence were preserved.
 E0/E1 remain PASS only for the original user-supplied OPPO proof fixture/revision.
 Actual Android E2, E3, source-built Git/SSH/HTTPS and terminal acceptance remain
 NOT RUN. No further implementation phase or release is authorized by this checkpoint.
+
+
+## T17 GH source-builder checkpoint — 4 November 2026
+
+Synchronized with `git fetch origin --prune` and independently confirmed PRs
+#1/#2/#3/#5 merged into main. Verified baseline
+`fcba37679561cd82105f66dbfea5c7a2214c3b09` was exactly origin/main and passed
+`git merge-base --is-ancestor`. PR #5's pre-merge run
+[41781293991](https://github.com/anthracite-labs/Termux-Pro-Max/actions/runs/41781293991)
+passed; that result is not evidence for this GH change. Read the corrected eight
+engineering/status documents before implementation.
+
+The new independent worktree is `/workspace/termux-gh-source-builder`, branch
+`feature/gh-source-builder`. Both older worktrees remain at their original commits
+(`/workspace/Termux-Pro-Max`: `27e445b`; `/workspace/termux-terminal-fix`: `9320ef1`)
+without tracked/untracked changes. Existing caches, packages, logs, original OPPO
+attachment and preservation backups were retained. No reset/clean, force push,
+destructive rebase, PR merge, Python/Node runtime or unrelated feature was started.
+
+### Implemented candidate and verified inputs
+
+- GH **2.103.3**, official source revision
+  `63837fb778d6a39f02be0ce76ff89f2bc8d74bdc`; archive SHA-256
+  `1a64dc5be667fa8c6458c0e639292ee1a5e215854705db267882e1bcf865b335`.
+  Archive Git tree matches `bda6d94df1932516804907a320cb70e1524339b6`;
+  reconstructed signed commit identity and actual GPG signature verify against
+  pinned GitHub web-flow key `968479A1AFF927E37D1A566BB5690EEEBB952194`.
+- Official Linux amd64 **Go 1.27.3 host** archive SHA-256
+  `65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40`;
+  Go executable SHA-256
+  `5f5eb6d0b2fb6aa0bb5d5f8c5f1c944e0de955c925f0111af92a9d8f79680b5b`.
+  Every extracted toolchain file is compared to the verified archive, exact host
+  version is checked, and automatic toolchain substitution is disabled.
+- All **160 actual Android build modules** have source ZIP h1 and go.mod h1
+  recomputed against signed-tree upstream go.sum. Read-only module locks, Go cache
+  verification, source ZIP inventory and license notices are enforced. Compilation
+  is offline. The corresponding-source bundle includes those exact module inputs,
+  GH source/signature/tree evidence, Go host archive with sources/license, build
+  inputs and patches. No opaque Android target dependency was downloaded.
+- Ordinary upstream GH code uses managed PATH to find Git. A narrow Android-only
+  patch returns the fixed managed `bin/gh` entry for self/credential-helper lookup,
+  because explicit loading can expose linker64 as os.Executable. Go uses supported
+  Android/ARM64 CGO + NDK external PIE linking. ELF interpreter, 16 KB alignment,
+  DT_NEEDED (`liblog.so`, `libdl.so`, `libc.so`) and private RUNPATH pass unchanged
+  validators. Terminal environment supplies the bundled CA file to Go via
+  SSL_CERT_FILE. Actual HTTPS/keyring/authentication/extension behavior is unverified.
+
+### Actual build and regression results
+
+**Fresh ten-package source output/sysroot build PASS_STATIC:** ncurses, readline,
+Bash, zlib, OpenSSL, OpenSSH clients, CA certificates, curl, Git and GH. Verified
+source archives and the content-addressed Go compiler cache were reused locally;
+this is not a measured bit-identical/cold-cache reproducibility claim. Production
+Python and Java consumers accept the entire ten-package closure. Independent
+bootstrap and corresponding-source ZIP/member hash audits pass (706 source
+members, including exactly 160 matching module ZIPs).
+
+**29 app/native + 6 shared/evidence + 14 builder tests PASS.** New coverage rejects
+host compiler/cache drift, bad module archives/mod sums, invalid signed source
+paths/revisions/trees, bad GH provenance/settings/inventory/licenses/closure and
+unverified/stale/mismatched E3 evidence. Local loopback API-data fixture coverage
+is host-only.
+
+**Terminal/test/proof APK assembly and lint PASS.** App and instrumentation APK
+signatures verify; actual APK inspection binds the correct GH-inclusive bootstrap
+and checks native ELF metadata. Lint: app zero errors / **3 warnings** (two fixed
+private identity paths and pre-API-31 backup declaration); proof zero errors /
+**6 warnings** (native fixture storage, backup declaration, icon and three UI text
+warnings). Nothing was suppressed to obtain a pass.
+
+An additional **Linux protocol fixture PASS** used source-built Linux GH 2.103.3,
+real host Git/OpenSSH, a loopback-only SSH daemon with new disposable keys, the
+same Unix-socket API data fixture, and a nonempty bare repository. GH exited zero
+and cloned expected commit `f201d330057a9715c344e3722f2e8b8f143410b1`.
+Evidence: `/workspace/scratch/gh-e3-host-w7cjejda/` and
+`/workspace/scratch/gh-host-protocol-test.log`. Host Git/SSH and a Linux Go runtime
+are distinct from the Android package set; **this is not Android E3 evidence**.
+
+Earlier local failures were preserved and resolved: fetching all optional Go/test
+modules exhausted disk, then only their redundant new extraction directories were
+compacted while every archive/log was retained; actual build imports select 160
+modules. Compiler scratch/cache moved to memory-backed storage. The initial Go
+archive check rejected the legitimate top-level directory; a focused negative/
+positive archive regression now covers it. A manual diagnostic package initially
+omitted the existing normal source-license staging step; the final full CLI build
+performs it and passes unchanged strict validation.
+
+During concurrent verification the existing Linux E2 fixture exposed a genuine
+lost-SIGWINCH race: READY could be observed before an unconditional pause, losing
+the resize wakeup. The minimal fixture fix blocks SIGWINCH and waits atomically
+with sigsuspend. A deterministic host test forces delivery before the wait and
+failed before/passed after the fix. Raw failing/isolated/forced-race logs and final
+passing logs are retained. This repairs test correctness; Android E2 is NOT RUN.
+
+### Exact local commands and evidence
+
+From `/workspace/termux-gh-source-builder`:
+
+```sh
+TP_NDK_HOME=/workspace/android-tools/sdk/ndk/28.2.13676358 TP_SOURCE_CACHE=/workspace/source-inputs TP_OUTPUT_DIR=/workspace/checkpoint-builds/gh-final-20261104 TP_GO_HOME=/workspace/gh-host-tools/go1.27.3/go TP_GO_MODULE_CACHE=/workspace/gh-go-cache/modules TP_GO_BUILD_CACHE=/dev/shm/termux-gh-cache GOTMPDIR=/dev/shm/termux-gh-tmp ./termux-pro-builder/build.sh bootstrap bash openssh git gh
+TP_OUTPUT_DIR=/workspace/checkpoint-builds/gh-final-20261104 ./termux-pro-builder/build.sh test gh
+TP_OUTPUT_DIR=/workspace/checkpoint-builds/gh-final-20261104 ./termux-pro-builder/build.sh test git
+TP_OUTPUT_DIR=/workspace/checkpoint-builds/gh-final-20261104 ./termux-pro-builder/build.sh test openssh
+JAVA_HOME=/workspace/android-tools/jdk-21.0.9+10 python3 -m unittest discover -s termux-pro-app/tests -v
+python3 -m unittest discover -s shared/tests -v
+python3 -m unittest discover -s termux-pro-builder/tests -v
+/workspace/android-tools/jdk-21.0.9+10/bin/javac -Xlint:all -d /workspace/scratch/gh-java-consumer termux-pro-app/app/src/main/java/com/anthracitelabs/termuxpro/bootstrap/*.java termux-pro-app/tests/BootstrapHost.java
+/workspace/android-tools/jdk-21.0.9+10/bin/java -cp /workspace/scratch/gh-java-consumer com.anthracitelabs.termuxpro.bootstrap.BootstrapHost closure /workspace/checkpoint-builds/gh-final-20261104/packages shared/target.json
+```
+
+The Gradle commands used environment
+`JAVA_HOME=/workspace/android-tools/jdk-21.0.9+10`,
+`ANDROID_HOME=/workspace/android-tools/sdk`,
+`GRADLE_USER_HOME=/workspace/android-tools/gradle-home`, and
+`TP_BOOTSTRAP_DIR=/workspace/checkpoint-builds/gh-final-20261104`:
+
+```sh
+termux-pro-app/gradlew --offline --no-daemon -p termux-pro-app :app:stageBootstrap --rerun-tasks
+termux-pro-app/gradlew --offline --no-daemon -p termux-pro-app :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug :proof:assembleDebug :proof:lintDebug
+/workspace/android-tools/sdk/build-tools/36.0.0/apksigner verify termux-pro-app/app/build/outputs/apk/debug/app-debug.apk
+/workspace/android-tools/sdk/build-tools/36.0.0/apksigner verify termux-pro-app/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+```
+
+Raw local results: `/workspace/scratch/gh-final-clean-build.log`,
+`gh-final-host-tests-fixed.log`, `gh-shared-tests.log`, `gh-builder-tests.log`,
+`gh-e2-lost-wakeup-{red,green}.log`, `gh-static.json`, `gh-java-consumer.log`,
+`gh-bundle-audit.json`, `gh-readelf.txt`, `gh-apk-final-build.log`, and
+`gh-apk-audit.json` in the same scratch directory. Source-build package/signature/
+module logs and complete candidates remain in
+`/workspace/checkpoint-builds/gh-final-20261104`.
+
+Local artifacts retain the truthful `fcba376...+dirty` working-tree identity:
+
+| Artifact | SHA-256 |
+|---|---|
+| GH .tpkg | `99844de55364d2673317588e27ceb5f910f5603c122e460cfb8754a73b6e2852` |
+| Android GH ELF | `0881b650cdbabe50a6a7a86bc8b6b6c9c0ce8e74f8d9e659195fba97ddbadba3` |
+| bootstrap.zip | `5741a8de298128c63d6b5210d4cc9fccb784a108f6c8f28c3e6121b4b7a5c436` |
+| sources.zip | `e8b2986b8965dede54d868ad4a608d936d5090400ef36a15e51a7f84d6f7709a` |
+| Terminal APK | `fee1979bce45efb89b0ebf0bad0af4833071cc393966225c48c7658cf81ddf50` |
+| Instrumentation APK | `25de2474537ecc9a633f4682abadf8f4059cff3a1454849278fd3b2a2cbefa79` |
+| Proof APK | `0d01d59b711a3f7e30f63f97159c7e697fcd08ee6f4e35883b6be70dc358176b` |
+
+### E3 preparation and unresolved gates
+
+[Real-program device route](docs/testing/gh-e3.md): the instrumentation APK contains
+`GhChainAcceptance`; `ci/run-gh-acceptance.py` sets up private ADB routes and requires
+a successful source-built GH → Git → SSH clone from an ephemeral SSH lab. It
+checks run nonce, expected commit, APK/build/installed command/manifest hashes,
+Git clone + managed SSH child exit/PID trace, ABI/API/page size and JUnit results.
+Failing/absent/stale evidence cannot become PASS. Real credentials are not required;
+no device runner/emulator is added to CI.
+
+CI now builds/verifies GH and publishes the same-run ten-package bootstrap, source,
+logs and terminal/test APKs. At commit creation the new PR's exact-head CI still
+requires observation; its final run/artifact links belong in that PR's results.
+Prior PR CI is not automatically a pass for this head.
+
+**E0/E1:** only the original supplied OPPO proof fixture/revision PASS.
+**Android E2, full terminal device acceptance and E3:** NOT RUN. GH/SSH/HTTPS,
+credential-helper self invocation, authentication, keyring, extensions and wider
+OEM/API/16 KB behavior remain unverified. The next independent acceptance work is
+physical E2 and terminal validation, then running the documented real E3 lab.
+T18 Python/Node was not started. Release/ADR/security/license/host-image/distribution
+approval remains blocked. No new PR is merged by this checkpoint.
+
+## SonarQube remediation checkpoint — 4 November 2026
+
+An isolated remediation branch based on PR #6 adds explicit Android cleartext
+denial, locked and SHA-256-verified Gradle inputs, Bash acceptance guard fixes,
+and a scoped Git object-identity security review with source-substitution tests.
+See [the finding-by-finding review and exact validation commands](docs/SONAR_REMEDIATION.md).
+Local results: 57 host tests PASS; strict proof/app/instrumentation APK assembly
+and lint PASS; existing ten-package Python/Java consumer checks PASS. Clean CI
+source builds and fresh Sonar analysis are tracked on the remediation PR; they
+are not inferred from these local checks. PR #8's initial fresh Sonar scan passed;
+its first host CI exposed a procfs race in the existing PTY test, reproduced and
+fixed without changing production PTY behavior. Both original Git hashing issues
+have narrowly documented false-positive review dispositions. The final-head CI
+and analysis are reported on PR #8. Android E2, terminal device acceptance
+and real E3 remain NOT RUN; original OPPO E0/E1 evidence scope is unchanged.
+
+Strict clean-runner Gradle verification also identified two missing parent/BOM
+metadata pins from warm-cache generation. Both were independently checked and
+added; strict APK assembly/lint then passed with a fresh local dependency cache.
+Final-head CI and Sonar results remain distinct from local verification.

@@ -82,3 +82,35 @@ non-UTF-8 key display text cannot break decoding or satisfy the signer check.
 Ubuntu CI now selects the combined Bash/OpenSSH closure and runs both Python and
 Java package consumers before bundling it into the terminal APK. Passing CI and
 actual Android execution remain distinct gates.
+
+## GH source-build candidate (T17)
+
+`./build.sh bootstrap bash openssh git gh` selects the GH-inclusive ten-package
+closure. GH 2.103.3 and its 160 Android build modules compile from pinned verified
+source with Go 1.27.3 (a checksum-verified **Linux host** compiler) and NDK r28c.
+The Android output must remain dynamic AArch64 PIE with linker64, private RUNPATH
+and 16 KB metadata. A static Go executable cannot pass the package validator.
+GH's helper/self-location uses only the fixed managed `bin/gh` entry on Android.
+Package assets include embedded upstream help/resources, source-build metadata,
+module locks, and GH/Go/dependency licenses. No external target package repository
+or runtime package downloader is added.
+
+`./build.sh test gh` checks the complete declared/ELF closure and GH-specific
+command inventory, compiler/source/module identity, compiled managed self-path
+and required license/data files. `sources.zip` includes the exact GH archive,
+signed commit/tree evidence, Go host archive (including sources/license), and
+verified module source inputs. Regenerating `source-offer ... gh` requires the
+matching successful build's `output/go-inputs.json` and cached module archives.
+
+The default Go module and host-tool caches are under `TP_SOURCE_CACHE`;
+`TP_GO_HOME` may select an existing toolchain only if every file matches the
+official pinned archive. `TP_GO_MODULE_CACHE` and `TP_GO_BUILD_CACHE` select cache
+locations; `GOTMPDIR` can select compiler scratch space. These storage choices do
+not change pins or enable compiler substitution. The builder disables network
+module retrieval during compilation, ignores local Go configuration/workspaces,
+and rejects lock/cache drift. Existing Bash/Git/OpenSSH builds need no Go compiler.
+
+The same GH-inclusive bootstrap is selected by source-builder CI and consumed by
+the downstream terminal APK job. Actual CI results must be observed for each head.
+Android E2, terminal acceptance and real E3 remain NOT RUN. The Android E3 test
+APK and controlled SSH/API lab procedure are in [gh-e3.md](../docs/testing/gh-e3.md).

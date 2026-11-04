@@ -1,13 +1,24 @@
-name: Execution proof
+name: Android APK CI
 
 on:
   pull_request:
-    branches: [main, 'feature/**']
+    branches: [main, 'feature/**', 'integration/**']
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_device:
+        description: 'Test on a connected ARM64 Android device (requires android-device runner)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+
+# Avoid overlapping source-build candidates on the same PR.
+concurrency:
+  group: android-apk-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   host-proof:
@@ -78,7 +89,8 @@ jobs:
             cat "$ANDROID_HOME/ndk/28.2.13676358/source.properties"
             ./gradlew --version
           } > build/evidence/apk/build-environment.log 2>&1
-          ./gradlew --no-daemon :proof:assembleDebug :proof:lintDebug 2>&1 | tee build/evidence/apk/build.log
+          ./gradlew --no-daemon --dependency-verification strict :proof:assembleDebug :proof:lintDebug 2>&1 | tee build/evidence/apk/build.log
+          python3 ci/check-gradle-security.py 2>&1 | tee build/evidence/apk/gradle-security.log
       - name: Stage the APK and its identity
         working-directory: termux-pro-app
         run: |
@@ -101,6 +113,7 @@ jobs:
           name: termux-pro-proof-build-logs
           path: |
             termux-pro-app/build/evidence/apk/
+            termux-pro-app/build/reports/dependency-verification/
             termux-pro-app/proof/build/reports/lint-results-debug.*
           retention-days: 14
 
@@ -127,10 +140,11 @@ jobs:
           set -o pipefail
           mkdir -p termux-pro-builder/output
           ./termux-pro-builder/build.sh doctor > termux-pro-builder/output/doctor.log
-          ./termux-pro-builder/build.sh bootstrap bash openssh git 2>&1 | tee termux-pro-builder/output/build.log
+          ./termux-pro-builder/build.sh bootstrap bash openssh git gh 2>&1 | tee termux-pro-builder/output/build.log
           ./termux-pro-builder/build.sh test bash | tee termux-pro-builder/output/bash-static.json
           ./termux-pro-builder/build.sh test openssh | tee termux-pro-builder/output/openssh-static.json
           ./termux-pro-builder/build.sh test git | tee termux-pro-builder/output/git-static.json
+          ./termux-pro-builder/build.sh test gh | tee termux-pro-builder/output/gh-static.json
           mkdir -p termux-pro-app/build/consumer-check
           javac -d termux-pro-app/build/consumer-check termux-pro-app/app/src/main/java/com/anthracitelabs/termuxpro/bootstrap/*.java termux-pro-app/tests/BootstrapHost.java
           java -cp termux-pro-app/build/consumer-check com.anthracitelabs.termuxpro.bootstrap.BootstrapHost closure termux-pro-builder/output/packages shared/target.json | tee termux-pro-builder/output/java-consumer.log
@@ -162,7 +176,7 @@ jobs:
       - name: Record actual gate scope
         if: always()
         run: |
-          echo 'Source build/static checks are candidates. Android E2/E3 and source-built package runtime acceptance: NOT RUN.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Source build and static checks only; Android runtime acceptance is separate.' >> "$GITHUB_STEP_SUMMARY"
 
   terminal-apk:
     needs: source-builder
@@ -187,12 +201,12 @@ jobs:
         with:
           name: termux-pro-source-bootstrap
           path: termux-pro-builder/output
-      - name: Build and lint terminal with bundled Bash, OpenSSH and Git
+      - name: Build and lint terminal with bundled Bash, OpenSSH, Git and GH
         working-directory: termux-pro-app
         run: |
           set -o pipefail
           mkdir -p build/evidence/terminal
-          ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug 2>&1 | tee build/evidence/terminal/build.log
+          ./gradlew --no-daemon --dependency-verification strict :app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug 2>&1 | tee build/evidence/terminal/build.log
           mkdir -p build/terminal-apk
           cp app/build/outputs/apk/debug/app-debug.apk build/terminal-apk/termux-pro-debug.apk
           cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk build/terminal-apk/termux-pro-test.apk
@@ -200,13 +214,35 @@ jobs:
           cp app/build/generated/bootstrapAssets/build.json build/terminal-apk/
           cd build/terminal-apk
           sha256sum termux-pro-debug.apk termux-pro-test.apk > SHA256SUMS
+      - name: Verify packaged launcher, native libraries and bootstrap hash
+        working-directory: termux-pro-app
+        run: |
+          python3 - <<'PY'
+          from hashlib import sha256
+          from zipfile import ZipFile
+          with ZipFile('build/terminal-apk/termux-pro-debug.apk') as apk:
+              required = {
+                  'assets/bootstrap.zip', 'assets/bootstrap.sha256',
+                  'assets/target.json', 'assets/build.json',
+                  'lib/arm64-v8a/libtp-launcher.so', 'lib/arm64-v8a/libtp-pty.so',
+              }
+              missing = required.difference(apk.namelist())
+              if missing:
+                  raise SystemExit(f'Missing APK entries: {sorted(missing)}')
+              if sha256(apk.read('assets/bootstrap.zip')).hexdigest() != apk.read('assets/bootstrap.sha256').decode().strip():
+                  raise SystemExit('Bundled bootstrap SHA-256 mismatch')
+          PY
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging build/terminal-apk/termux-pro-debug.apk | grep -F "launchable-activity: name='com.anthracitelabs.termuxpro.TerminalActivity'"
       - name: Publish the terminal candidate APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: termux-pro-apk
+          name: termux-pro-apk-candidate
           path: termux-pro-app/build/terminal-apk/
           if-no-files-found: error
           retention-days: 14
+      - name: Record APK verification scope
+        if: always()
+        run: echo 'The APK is a build/static-verified candidate. Device launch and Bash acceptance are NOT RUN without the separate device-test job.' >> "$GITHUB_STEP_SUMMARY"
       - name: Preserve terminal build and lint evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -214,5 +250,33 @@ jobs:
           name: termux-pro-terminal-build-logs
           path: |
             termux-pro-app/build/evidence/terminal/
+            termux-pro-app/build/reports/dependency-verification/
             termux-pro-app/app/build/reports/lint-results-debug.*
+          retention-days: 14
+
+  device-test:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_device
+    needs: terminal-apk
+    runs-on: [self-hosted, Linux, android-device]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: termux-pro-apk-candidate
+          path: termux-pro-app/build/terminal-apk
+      - name: Verify candidate SHA-256 checksums
+        working-directory: termux-pro-app/build/terminal-apk
+        run: sha256sum -c SHA256SUMS
+      - name: Test startup and bundled Bash on connected ARM64 device
+        working-directory: termux-pro-app
+        run: bash ci/run-terminal-acceptance.sh build/terminal-apk/termux-pro-debug.apk build/terminal-apk/termux-pro-test.apk
+      - name: Preserve Android device evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: termux-pro-device-evidence
+          path: termux-pro-app/build/evidence/terminal-device/
           retention-days: 14

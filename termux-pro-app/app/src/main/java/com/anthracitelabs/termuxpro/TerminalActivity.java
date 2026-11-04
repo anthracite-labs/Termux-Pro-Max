@@ -30,8 +30,8 @@ public final class TerminalActivity extends Activity {
         });
         status = new TextView(this); status.setTextColor(Color.LTGRAY); status.setText(R.string.preview);
         status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); layout.addView(status);
-        terminal = new TerminalView(this, null); terminal.setTerminalViewClient(app);
-        terminal.setTypeface(Typeface.MONOSPACE); terminal.setTextSize(app.fontPixels());
+        terminal = new TerminalView(this, null); terminal.setFocusableInTouchMode(true); terminal.setTerminalViewClient(app);
+        terminal.setTextSize(app.fontPixels()); terminal.setTypeface(Typeface.MONOSPACE);
         terminal.setContentDescription(getString(R.string.terminal_description));
         layout.addView(terminal, new LinearLayout.LayoutParams(-1, 0, 1));
         LinearLayout keys = new LinearLayout(this);
@@ -65,7 +65,11 @@ public final class TerminalActivity extends Activity {
     void showStatus(String message, boolean failed) { status.setText(message); repair.setVisibility(failed ? View.VISIBLE : View.GONE); }
     void keyboard() {
         terminal.requestFocus();
-        ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showSoftInput(terminal, InputMethodManager.SHOW_IMPLICIT);
+        // Match upstream Termux's delayed IME request after focus/window attachment.
+        terminal.postDelayed(() -> {
+            if (terminal.isAttachedToWindow() && terminal.hasWindowFocus() && terminal.hasFocus())
+                ((InputMethodManager)getSystemService(INPUT_METHOD_SERVICE)).showSoftInput(terminal, 0);
+        }, 300);
     }
     @Override protected void onDestroy() {
         if (app.activity.get() == this) app.activity.clear();

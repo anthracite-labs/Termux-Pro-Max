@@ -86,3 +86,53 @@ https://android.googlesource.com/platform/bionic/+/refs/tags/android-11.0.0_r48/
 The upstream C compatibility build is selected; optional Perl/Python/Tcl Git
 helpers are not part of the native-only command inventory. Runtime acceptance
 of Git, HTTPS, SSH and encoding behavior on Android remains NOT RUN.
+
+## GH / Go T17 source inputs
+
+GH v2.103.3 is pinned to commit `63837fb778d6a39f02be0ce76ff89f2bc8d74bdc`.
+The official commit archive SHA-256 is
+`1a64dc5be667fa8c6458c0e639292ee1a5e215854705db267882e1bcf865b335`.
+The release tag points directly to this signed GitHub web-flow commit; the release
+does not publish a detached signature over this source tarball. The builder
+reconstructs the signed Git commit object, checks its revision, reconstructs the
+archive's Git tree (`bda6d94df1932516804907a320cb70e1524339b6`), and checks that
+tree against the signed payload before GPG verification. The archive is thus
+checked against the signed source tree, rather than treating binary-release
+attestations as source-archive signatures.
+
+The commit payload/signature are preserved verbatim in `gh/`. Public signing key
+`968479A1AFF927E37D1A566BB5690EEEBB952194` was obtained from
+https://github.com/web-flow.gpg (download SHA-256
+`6e8af687f60cf3f403151c8fb1b26e95e6f9e424ca60cc8f3787bd4466a3ef84`).
+`gh-signers.gpg` exports only that public key, SHA-256
+`878730e9ece9143bb14d634d55aa56f0570876b00aa28cc310090fe7262f1122`.
+This trust root is GitHub's published web-flow key over TLS; it is not an
+independent audit of each maintainer's identity. Human GPG unknown-trust warnings
+do not replace the enforced fingerprint, signature status and revision/tree checks.
+
+Official Go 1.27.3 Linux amd64 host archive and executable digests are pinned in
+`toolchain.lock`, acquired from https://go.dev/dl/?mode=json. Every extracted
+file is compared to the checksum-verified archive before use; automatic Go
+toolchain substitution is disabled. No detached Go archive signature is claimed.
+The host archive contains corresponding Go sources and its BSD license and is
+included in `sources.zip`; it is not an Android target dependency binary.
+
+GH's signed-tree `go.mod` / `go.sum` SHA-256 pins are in `sources.lock`. Only the
+actual Android command's module closure is selected. Each source ZIP's Go h1 and
+each `.mod` h1 are independently recomputed against upstream `go.sum`; Go also
+verifies its extracted cache. Module source ZIPs, `.mod`, `.info`, `.ziphash`,
+build recipes/patches/keys and all required license notices accompany the source
+offer. Runtime packages carry GH/Go and module license texts plus build metadata.
+Go's checksum algorithm reference is pinned toolchain source
+`src/cmd/vendor/golang.org/x/mod/sumdb/dirhash/hash.go`.
+
+The Android target uses supported `GOOS=android GOARCH=arm64 CGO_ENABLED=1`, PIE
+and NDK external linking, private RUNPATH and 16 KB alignment. Reference:
+https://go.dev/cmd/go/#hdr-Build_modes and the pinned GH `docs/source.md` /
+`script/build.go`. `-trimpath`, `-buildvcs=false`, a fixed release date/version,
+read-only module locks, and an offline compile phase keep inputs explicit;
+byte-identical reproducibility is not claimed without measured double builds.
+The only GH source patch changes Android self-location to the fixed managed
+command because explicit linker loading may expose the linker as os.Executable.
+Actual Android child execution, authentication/keyring, HTTPS, extensions and E3
+remain unverified; see `docs/testing/gh-e3.md` for the real-program test route.
