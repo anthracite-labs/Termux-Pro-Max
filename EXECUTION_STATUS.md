@@ -458,3 +458,15 @@ OEM/API/16 KB behavior remain unverified. The next independent acceptance work i
 physical E2 and terminal validation, then running the documented real E3 lab.
 T18 Python/Node was not started. Release/ADR/security/license/host-image/distribution
 approval remains blocked. No new PR is merged by this checkpoint.
+# SonarQube remediation checkpoint — 4 November 2026
+
+An isolated remediation branch based on PR #6 adds explicit Android cleartext
+denial, locked and SHA-256-verified Gradle inputs, Bash acceptance guard fixes,
+and a scoped Git object-identity security review with source-substitution tests.
+See [the finding-by-finding review and exact validation commands](docs/SONAR_REMEDIATION.md).
+Local results: 56 host tests PASS; strict proof/app/instrumentation APK assembly
+and lint PASS; existing ten-package Python/Java consumer checks PASS. Clean CI
+source builds and fresh Sonar analysis are tracked on the remediation PR; they
+are not inferred from these local checks. Android E2, terminal device acceptance
+and real E3 remain NOT RUN; original OPPO E0/E1 evidence scope is unchanged.
+

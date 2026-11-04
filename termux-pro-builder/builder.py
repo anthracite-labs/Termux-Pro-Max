@@ -172,7 +172,9 @@ def verify_signature(name, archive, signature, source, output, log):
 
 def archive_git_tree(archive):
     def object_hash(kind, data):
-        return hashlib.sha1(kind + b' ' + str(len(data)).encode() + b'\0' + data).digest()
+        # Git SHA-1 object identity only; source integrity uses pinned SHA-256
+        # and GPG authentication in source_inputs. See docs/SONAR_REMEDIATION.md.
+        return hashlib.sha1(kind + b' ' + str(len(data)).encode() + b'\0' + data, usedforsecurity=False).digest()
     root, archive_root = {}, None
     with tarfile.open(archive) as tar:
         for member in tar:
@@ -208,7 +210,8 @@ def source_inputs(name, source, cache, output, log):
         check_hash(payload, signed['payload_sha256']); check_hash(signature, signed['signature_sha256'])
         header, message = payload.read_bytes().split(b'\n\n', 1)
         raw = header + b'\ngpgsig ' + signature.read_bytes().replace(b'\n', b'\n ') + b'\n\n' + message
-        commit = hashlib.sha1(b'commit ' + str(len(raw)).encode() + b'\0' + raw).hexdigest()
+        # Reconstruct upstream's Git object ID; never use it as the integrity pin.
+        commit = hashlib.sha1(b'commit ' + str(len(raw)).encode() + b'\0' + raw, usedforsecurity=False).hexdigest()
         contract.require(commit == source['revision'], 'signed commit revision mismatch')
         contract.require(header.splitlines()[0] == ('tree ' + archive_git_tree(archive)).encode(), 'source archive differs from signed Git tree')
         verify_signature(name, payload, signature, source, output, log)
