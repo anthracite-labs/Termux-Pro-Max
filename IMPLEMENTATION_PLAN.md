@@ -88,20 +88,14 @@ Tasks are scoped so a future agent can implement and verify each task in a focus
 ## 4. Dependency order and parallel work
 
 ```text
-T01/T02 ──> T03 E0/E1 ──> T04 E2 fixture ──> T05 child fixture
-    │            │
-    │            └──> T07 package contract ──> T08 ──> T09 ──> T10 ──> T11 CI
-    │                       │                       │
-    └──> T12 UI ──> T13 PTY┘                       │
-                       └────────> T14 bootstrap ───┘ ──> T15 Android app acceptance
-                T16 Git/OpenSSH source builds <──── T09/T10
-                T16 Android runtime acceptance <── T15
-                                  │
-                                  └──> T17 GH → Git → SSH real E3
-                T18 Python/Node source builds <─── T11
-                T18 Android subprocess tests <──── T15
-                                         │
-                              T19 hardening ──> T20 matrix ──> T21 release
+Foundation:    T01/T02 → T03 E0/E1 → T04 E2 fixture → T05 child fixture
+Contract:      T01 + T03 → T07 → T08 → T09 → T10 → T11 CI
+Terminal:      T01 → T12 UI; T03 + T07 + T12 → T13 PTY
+Bootstrap:     T07 + T10 + T13 → T14 → T15 Android acceptance
+Core builder:  T09 + T10 → T16 Git/OpenSSH source builds
+Core device:   T15 + T16 + Android E2 → T17 GH → Git → SSH real E3
+Runtimes:      T11 → T18 Python/Node source builds; T15 → runtime tests
+Release:       T14 + T17 + T18 → T19 → T20 → T21
 ```
 
 Task-level acceptance requirements take precedence over the simplified diagram. **Fixture E0/E1 and E2 tests are not E3.** The first real nested GH → Git → SSH acceptance requires the actual source-built packages and Android app. Builder recipes and UI may progress while device-specific results remain pending; final architecture approval and release may not.
