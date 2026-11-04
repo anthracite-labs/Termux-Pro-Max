@@ -13,7 +13,9 @@ final class ProofFiles {
 
     static void deleteRun(Path run) throws IOException {
         // Delete only our known entries; never walk or follow fixture symlinks.
-        for (String entry : new String[] {"usr/bin/gh", "usr/bin/unregistered", "usr/bin", "usr"})
+        for (String entry : new String[] {"usr/bin/gh", "usr/bin/unregistered", "usr/bin",
+                "usr/libexec/tp-real/e2-target.invalid", "usr/libexec/tp-real/e2-target",
+                "usr/libexec/tp-real", "usr/libexec", "usr"})
             Files.deleteIfExists(run.resolve(entry));
         Files.delete(run);
     }

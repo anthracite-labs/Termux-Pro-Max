@@ -45,3 +45,26 @@ basenames, forged argv0 is ignored for identity, unsupported aliases/arguments
 fail, each native child is bounded and reaped, and unexpected cleanup contents
 are preserved with a failure. This is not a production command registry or a
 same-UID isolation boundary. See VERIFICATION.md for remaining acceptance tests.
+
+## E2 device probe (candidate, Android NOT RUN)
+
+The proof APK now has a **Run E2 linker / PTY proof** button. It copies a
+checksum-verified dynamically linked AArch64 ELF asset into its isolated writable
+fixture tree, then invokes that target through a protected fixture launcher and
+`/system/bin/linker64`. It does not execute the writable target directly.
+
+```sh
+ANDROID_SERIAL=<device-serial> bash ci/run-device-acceptance.sh proof/build/outputs/apk/debug/proof-debug.apk e2
+```
+
+The seven native cases check separate empty/spaced/quoted/Unicode arguments,
+environment/cwd/PID, stdin and an inherited FD, stderr, exit codes 1/127, SIGTERM,
+static/foreign-ABI rejection, PTY foreground control, SIGWINCH resize and Ctrl+C.
+The system linker determines program argv0 (target-path visibility is a separate
+compatibility concern); no universal process-name or arbitrary-binary guarantee
+is made. Each child is bounded and reaped. E3 remains NOT RUN.
+
+The same helper/fixture passes a Linux explicit-linker regression with Linux
+machine/interpreter constants substituted at compile time. NDK arm64 ELF/static
+and APK checks pass. Neither is an Android E2 acceptance result. Save the new
+APK/source hash and actual `e2-proof.log` before attributing a device result.

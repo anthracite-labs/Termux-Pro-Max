@@ -32,7 +32,7 @@ No universal Android, 16 KB, PTY or real-package compatibility is claimed.
 | T01 target/identity | DONE for internal primary-user builds | `shared/target.json`; release channel review is separate |
 | T02 authoritative baseline | PARTIAL | Complete toolchain/source pin and policy review while implementation proceeds |
 | T03 E0/E1 harness | DONE for the supplied fixture/device | Broader matrix remains T20 work |
-| T04 E2 semantics | IN PROGRESS | Compatible ELF and argument/env/FD/cwd/signal/exit evidence on Android |
+| T04 E2 semantics | IMPLEMENTED, Android acceptance pending | Dynamic ELF fixture and Linux linker/PTY regression pass; obtain actual Android E2 log |
 | T05 child probe | PENDING | Separate fixture proof from actual E3 package-chain acceptance |
 | T06 execution ADR | CANDIDATE | E2/E3 evidence; ADR-004 is not final |
 | T07 package contract | IN PROGRESS | Shared schema/negative fixtures and both consumers |
@@ -62,3 +62,7 @@ The original emulator attempts failed before installation because Google's
 x86-64-host emulator rejected an ARM64 guest. Those infrastructure failures do
 not falsify E1 and are superseded by the separately supplied physical-device
 observation, not reclassified as passing Android tests.
+
+## E2 candidate implementation
+
+The proof APK includes a separate dynamic ELF target asset, protected E2 launcher, and seven-case driver. Linux process/PTY regression and NDK ELF/APK build/lint checks pass; **Android E2 remains NOT RUN**. No E3 fixture or host test is promoted to the real source-built GH/Git/SSH gate.
