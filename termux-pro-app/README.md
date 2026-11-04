@@ -97,8 +97,14 @@ Ctrl+C, Unicode/ANSI text and close/reap. Rotation, full job control, screen-rea
 and keyboard usability still need explicit device coverage. Never count compilation
 of the test APK as a passing device run.
 
-GitHub Actions publishes `termux-pro-apk` (app plus instrumentation APK, checksums,
-source revision and bootstrap digest), separately from `termux-pro-proof-apk`.
+GitHub Actions publishes `termux-pro-apk-candidate` (app plus instrumentation APK,
+checksums, source revision and bootstrap digest), separately from `termux-pro-proof-apk`.
+APK build/lint and archive checks do **not** prove it starts on Android. The
+`Android APK CI` workflow can run `device-test` with a manual
+`workflow_dispatch` and `run_device=true` on a self-hosted Linux runner labeled
+`android-device`, with ADB authorized to a connected ARM64 Android device.
+That gate launches the Activity, tests bundled Bash/PTY, and uploads device logs;
+without it the APK remains a candidate.
 Both variants currently use the same application ID and signing key type; they
 replace each other. Android debug downgrades may require `adb install -r -d`.
 Do not uninstall to switch if you want to preserve app data/HOME.
