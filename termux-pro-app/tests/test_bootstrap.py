@@ -48,6 +48,42 @@ class Bootstrap(unittest.TestCase):
             self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
         return result
 
+
+    def test_large_payload_verifies_under_android_sized_heap(self):
+        # GH ships a large native payload. Validation must not expand it into
+        # multiple full-size Java arrays/Strings on Android's 192 MiB heap.
+        with tempfile.TemporaryDirectory() as directory:
+            payload = bytearray(80 * 1024 * 1024)
+            path = Path(directory) / 'large.tpkg'
+            manifest = self.fixture.manifest()
+            manifest['commands'] = []
+            manifest['files'] = [{'path': 'share/large.bin', 'sha256': '', 'mode': '0644'}]
+
+            def validate():
+                manifest['files'][0]['sha256'] = hashlib.sha256(payload).hexdigest()
+                with zipfile.ZipFile(path, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=1) as archive:
+                    archive.writestr('manifest.json', json.dumps(manifest))
+                    entry = zipfile.ZipInfo('payload/share/large.bin')
+                    entry.create_system = 3
+                    entry.external_attr = (stat.S_IFREG | 0o644) << 16
+                    entry.compress_type = zipfile.ZIP_DEFLATED
+                    archive.writestr(entry, payload)
+                return subprocess.run(
+                    [self.java, '-Xmx192m', '-cp', str(self.classes),
+                     'com.anthracitelabs.termuxpro.bootstrap.BootstrapHost',
+                     'validate', str(path), str(self.target_path)],
+                    capture_output=True, text=True, timeout=60)
+
+            good = validate()
+            self.assertEqual(good.returncode, 0, good.stdout + good.stderr)
+
+            # Cross a 16 KiB read boundary; forbidden paths must still fail.
+            forbidden = b'/workspace/'
+            payload[16384 - 4:16384 - 4 + len(forbidden)] = forbidden
+            bad = validate()
+            self.assertNotEqual(bad.returncode, 0, bad.stdout)
+            self.assertIn('foreign/host path', bad.stderr)
+
     def test_same_native_contract_fixture_and_negative_archives(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'fixture.tpkg'
