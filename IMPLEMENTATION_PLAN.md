@@ -1,7 +1,7 @@
 # Termux Pro — Dependency-Ordered Implementation Plan
 
 **Status:** engineering plan baseline; current implementation and evidence are tracked in [EXECUTION_STATUS.md](EXECUTION_STATUS.md).
-**Gating philosophy:** validate minimal E0/E1 and E2 fixtures early, then prove the real source-built GH → Git → SSH chain (E3) once its builder, packages and terminal prerequisites exist. Independent builder and UI work may continue with device gates open. **No speculative package manager, custom linker, modified Bash or multi-ABI support.**  
+**Gating philosophy:** validate minimal E0/E1 and E2 fixtures early, then prove the real source-built GH → Git → SSH chain (E3) once its builder, packages and terminal prerequisites exist. Independent builder and UI work may continue with device gates open. **No speculative package manager, custom linker, modified Bash or multi-ABI support.**
 **Sources and references:** [README](README.md#evidence-register) · [Architecture](ARCHITECTURE.md) · [App](ANDROID_APP_SPEC.md) · [Builder](BUILDER_SPEC.md) · [Contract](PACKAGE_CONTRACT.md) · [Verification](VERIFICATION.md).
 
 ## 1. Capability map
