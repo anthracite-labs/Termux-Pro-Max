@@ -138,7 +138,7 @@ class Runtime(unittest.TestCase):
                 comm = Path(f'/proc/{foreground}/comm')
                 try:
                     name = comm.read_text().strip()
-                except FileNotFoundError:
+                except (FileNotFoundError, ProcessLookupError):
                     # A transient foreground group (stty) can exit before this read.
                     name = ''
                 if foreground != pid and name == 'sleep': break
