@@ -91,3 +91,11 @@ terminal/PTY and transactional bootstrap consumer; then real source-built
 Git/OpenSSH/GH and E3, Python/Node, importer hardening and compatibility matrix.
 The app terminal has not been implemented. Release remains blocked by the open
 runtime, host-image, signing, license/security and distribution gates.
+
+### Builder automation continuation
+
+Ubuntu source-builder CI now compiles the same Bash closure and uploads candidate
+packages/bootstrap plus corresponding verified upstream sources and build inputs.
+The source-offer regression checks every recorded member hash and rejects a
+tampered cached source. Three builder unit tests pass locally. CI execution is
+pending observation; it does not replace Android acceptance.

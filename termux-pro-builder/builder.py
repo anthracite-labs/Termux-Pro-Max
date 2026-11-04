@@ -243,8 +243,49 @@ def bootstrap(order, sources, target, output):
     return path
 
 
+def source_offer(order, sources, cache, output):
+    """Ship exact upstream inputs and build scripts alongside GPL binaries."""
+    output.mkdir(parents=True, exist_ok=True)
+    inputs = {}
+    with open(output / 'source-verification.log', 'w') as log:
+        for name in order:
+            source = sources[name]
+            archive = source_inputs(name, source, cache, output, log)
+            inputs['upstream/' + archive.name] = archive.read_bytes()
+            if source.get('signature_url'):
+                signature = cache / source['signature_url'].rsplit('/', 1)[1]
+                inputs['upstream/' + signature.name] = signature.read_bytes()
+    tracked = subprocess.check_output(
+        ['git', '-C', str(ROOT), 'ls-files', '-z', 'shared', 'termux-pro-builder'], text=True)
+    for relative in tracked.split('\0'):
+        if relative and '__pycache__' not in relative:
+            inputs['build/' + relative] = (ROOT / relative).read_bytes()
+    for name in ['PACKAGE_CONTRACT.md', 'BUILDER_SPEC.md', 'ARCHITECTURE.md']:
+        inputs['build/' + name] = (ROOT / name).read_bytes()
+    revision, digest = build_identity()
+    record = {'schema': 1, 'build_id': revision, 'build_inputs_sha256': digest,
+              'packages': order, 'files': {name: hashlib.sha256(data).hexdigest()
+                                         for name, data in sorted(inputs.items())}}
+    inputs['index.json'] = (json.dumps(record, indent=2, sort_keys=True) + '\n').encode()
+    inputs['README.txt'] = (
+        'Corresponding source for the accompanying Termux Pro candidate packages.\n'
+        'Official, unchanged upstream archives and detached signatures: upstream/.\n'
+        'Build scripts, patches, locks, keys and contract: build/.\n'
+        'Extract archives into a source cache and follow build/termux-pro-builder/README.md.\n'
+        'The pinned Android NDK and listed host build tools must be installed separately.\n'
+        'Source license texts are in the upstream archives and runtime package payloads.\n'
+        'Android execution and release approval are not implied by this source bundle.\n').encode()
+    path = output / 'sources.zip'
+    with zipfile.ZipFile(path.with_suffix('.partial'), 'w') as archive:
+        for name, data in sorted(inputs.items()):
+            zip_bytes(archive, name, data)
+    path.with_suffix('.partial').replace(path)
+    path.with_suffix('.sha256').write_text(hashlib.sha256(path.read_bytes()).hexdigest() + '  sources.zip\n')
+    return path
+
+
 def main(args):
-    contract.require(args, 'usage: build.sh doctor | build PACKAGE | bootstrap | verify FILE | test PACKAGE | release')
+    contract.require(args, 'usage: build.sh doctor | build PACKAGE | bootstrap | source-offer | verify FILE | test PACKAGE | release')
     target = contract.read_json((ROOT / 'shared/target.json').read_text())
     sources = contract.read_json((BASE / 'sources.lock').read_text())
     lock = contract.read_json((BASE / 'toolchain.lock').read_text())
@@ -259,6 +300,9 @@ def main(args):
     elif command == 'bootstrap' and len(args) == 1:
         order = build('bash', sources, recipes, lock, target, cache, output)
         bootstrap(order, sources, target, output)
+        source_offer(order, sources, cache, output)
+    elif command == 'source-offer' and len(args) == 1:
+        print(source_offer(plan('bash', recipes), sources, cache, output))
     elif command in {'verify', 'test'} and len(args) == 2:
         path = Path(args[1]) if command == 'verify' else output / 'packages' / f'{args[1]}-{sources[args[1]]["version"]}.tpkg'
         manifest, payload = contract.load_package(path, target)
